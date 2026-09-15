@@ -31,7 +31,7 @@ async function request(path, { method = 'GET', body, auth = false } = {}) {
   }
 
   if (!res.ok) {
-    const error = new Error(data?.error || `Request failed (${res.status})`);
+    const error = new Error(data?.detail || data?.error || `Request failed (${res.status})`);
     error.status = res.status;
     throw error;
   }
