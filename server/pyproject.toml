@@ -1,0 +1,13 @@
+[project]
+name = "okada-connect-server"
+version = "0.1.0"
+description = "Okada Connect API — FastAPI backend"
+requires-python = ">=3.12"
+dependencies = [
+    "fastapi>=0.115",
+    "uvicorn[standard]>=0.34",
+    "psycopg[binary,pool]>=3.2",
+    "bcrypt>=4.2",
+    "pyjwt>=2.10",
+    "python-dotenv>=1.0",
+]
