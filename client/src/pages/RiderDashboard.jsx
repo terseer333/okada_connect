@@ -1,5 +1,6 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import Header from '../components/Header.jsx';
+import MapView from '../components/MapView.jsx';
 import { useGeolocation } from '../hooks/useGeolocation.js';
 import { api } from '../services/api.js';
 
@@ -61,6 +62,18 @@ export default function RiderDashboard() {
     }
   }
 
+  const center = useMemo(
+    () => (position ? [position.coords.latitude, position.coords.longitude] : null),
+    [position],
+  );
+  const markers = useMemo(
+    () =>
+      center
+        ? [{ id: 'me', position: center, label: 'You (live GPS)', kind: 'rider' }]
+        : [],
+    [center],
+  );
+
   return (
     <div className="min-h-screen bg-gray-50">
       <Header />
@@ -102,13 +115,14 @@ export default function RiderDashboard() {
           </p>
         )}
 
-        {/* Map placeholder — real map lands in Phase 5 */}
-        <div className="mt-6 flex aspect-square items-center justify-center rounded-2xl border-2 border-dashed border-gray-300 bg-white">
-          <p className="px-8 text-center text-sm text-gray-400">
-            Map view coming soon
-            <br />
-            (your location will be shown here when online)
-          </p>
+        <div className="mt-6 h-80 overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
+          {center ? (
+            <MapView center={center} markers={markers} />
+          ) : (
+            <div className="flex h-full items-center justify-center text-sm text-gray-400">
+              {online ? (locError || 'Waiting for GPS fix…') : 'Go online to share your location'}
+            </div>
+          )}
         </div>
 
         {rider && (rider.motorcycle_number || rider.motorcycle_model) && (

@@ -1,9 +1,11 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import Header from '../components/Header.jsx';
+import MapView from '../components/MapView.jsx';
 import { useGeolocation } from '../hooks/useGeolocation.js';
 import { api } from '../services/api.js';
 
 export default function CustomerDashboard() {
+  const [pickup, setPickup] = useState(null); // [lat, lon] — defaults to GPS fix
   const [pickupConfirmed, setPickupConfirmed] = useState(false);
   const [nearby, setNearby] = useState(null);
   const [searching, setSearching] = useState(false);
@@ -11,26 +13,35 @@ export default function CustomerDashboard() {
 
   const { position, error: locError, requestOnce } = useGeolocation();
 
+  const effectivePickup = pickup || (position ? [position.coords.latitude, position.coords.longitude] : null);
+
+  // Adjust pickup by tapping the map (README: "Customers should be able to
+  // confirm or adjust their pickup point on the map").
+  function handleMapPick([lat, lon]) {
+    setPickup([lat, lon]);
+  }
+
   async function confirmPickup() {
-    if (!position) {
+    if (!effectivePickup) {
       requestOnce();
       return;
     }
-    setPickupConfirmed(true);
     setSearchError(null);
     try {
-      await api.updateCustomerLocation(position.coords.latitude, position.coords.longitude);
+      await api.updateCustomerLocation(effectivePickup[0], effectivePickup[1]);
+      setPickup(effectivePickup);
+      setPickupConfirmed(true);
     } catch (err) {
       setSearchError(err.message);
     }
   }
 
   async function findRiders() {
-    if (!position) return;
+    if (!effectivePickup) return;
     setSearching(true);
     setSearchError(null);
     try {
-      const data = await api.nearbyRiders(position.coords.latitude, position.coords.longitude);
+      const data = await api.nearbyRiders(effectivePickup[0], effectivePickup[1]);
       setNearby(data.riders);
     } catch (err) {
       setSearchError(err.message);
@@ -38,6 +49,27 @@ export default function CustomerDashboard() {
       setSearching(false);
     }
   }
+
+  const markers = useMemo(() => {
+    const list = [];
+    if (effectivePickup) {
+      list.push({
+        id: 'pickup',
+        position: effectivePickup,
+        label: 'Pickup point (tap map to adjust)',
+        kind: 'pickup',
+      });
+    }
+    for (const r of nearby || []) {
+      list.push({
+        id: `rider-${r.userId}`,
+        position: [r.latitude, r.longitude],
+        label: `${r.name} • ${r.distanceKm} km`,
+        kind: 'rider',
+      });
+    }
+    return list;
+  }, [effectivePickup, nearby]);
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -51,26 +83,30 @@ export default function CustomerDashboard() {
           <div className="mt-4 flex items-center gap-2 text-sm text-gray-600">
             <span aria-hidden>📍</span>
             <span>
-              {position
-                ? `Location found (${position.coords.latitude.toFixed(4)}, ${position.coords.longitude.toFixed(4)})`
+              {effectivePickup
+                ? `Pickup: ${effectivePickup[0].toFixed(4)}, ${effectivePickup[1].toFixed(4)}`
                 : 'Detecting current location…'}
             </span>
           </div>
         )}
 
-        {/* Map placeholder — real map lands in Phase 5 */}
-        <div className="mt-4 flex aspect-square items-center justify-center rounded-2xl border-2 border-dashed border-gray-300 bg-white">
-          <p className="px-8 text-center text-sm text-gray-400">
-            Map view coming soon
-            <br />
-            (your location will appear here)
-          </p>
+        <div className="mt-4 h-80 overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
+          {effectivePickup ? (
+            <MapView center={effectivePickup} markers={markers} onPick={handleMapPick} />
+          ) : (
+            <div className="flex h-full items-center justify-center text-sm text-gray-400">
+              {locError || 'Waiting for location…'}
+            </div>
+          )}
         </div>
+        <p className="mt-1 text-center text-xs text-gray-400">
+          Tap the map to adjust your pickup point
+        </p>
 
         <div className="mt-4">
           <button
             onClick={confirmPickup}
-            disabled={!position}
+            disabled={!effectivePickup}
             className="w-full rounded-xl border-2 border-okada px-6 py-3 font-semibold text-okada hover:bg-green-50 disabled:opacity-50"
           >
             {pickupConfirmed ? '✓ Pickup location confirmed' : 'Confirm pickup location'}
