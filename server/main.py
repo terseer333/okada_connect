@@ -13,6 +13,7 @@ load_dotenv(Path(__file__).resolve().parent.parent / ".env")
 
 from config.db import init_db  # noqa: E402  (needs env loaded first)
 from controllers.auth import router as auth_router  # noqa: E402
+from controllers.customers import router as customer_router  # noqa: E402
 from controllers.riders import router as rider_router  # noqa: E402
 
 
@@ -38,6 +39,7 @@ def health():
 
 
 app.include_router(auth_router)
+app.include_router(customer_router)
 app.include_router(rider_router)
 
 

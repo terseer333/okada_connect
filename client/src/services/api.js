@@ -46,4 +46,10 @@ export const api = {
   riderProfile: () => request('/riders/profile', { auth: true }),
   updateRiderStatus: (availabilityStatus) =>
     request('/riders/status', { method: 'PATCH', body: { availabilityStatus }, auth: true }),
+  updateRiderLocation: (latitude, longitude) =>
+    request('/riders/location', { method: 'PUT', body: { latitude, longitude }, auth: true }),
+  updateCustomerLocation: (latitude, longitude) =>
+    request('/customers/location', { method: 'PUT', body: { latitude, longitude }, auth: true }),
+  nearbyRiders: (latitude, longitude) =>
+    request(`/riders/nearby?latitude=${latitude}&longitude=${longitude}`, { auth: true }),
 };

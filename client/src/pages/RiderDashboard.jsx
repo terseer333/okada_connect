@@ -1,11 +1,17 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import Header from '../components/Header.jsx';
+import { useGeolocation } from '../hooks/useGeolocation.js';
 import { api } from '../services/api.js';
+
+const LOCATION_INTERVAL_MS = 15_000; // heartbeat: rider must appear "fresh" to customers
 
 export default function RiderDashboard() {
   const [rider, setRider] = useState(null);
   const [error, setError] = useState(null);
   const [toggling, setToggling] = useState(false);
+  const [locError, setLocError] = useState(null);
+
+  const online = rider?.availability_status === 'online';
 
   useEffect(() => {
     api
@@ -13,6 +19,32 @@ export default function RiderDashboard() {
       .then((data) => setRider(data.rider))
       .catch((err) => setError(err.message));
   }, []);
+
+  const { position } = useGeolocation({ enabled: online });
+
+  // Push the latest fix to the backend whenever it changes…
+  const positionRef = useRef(null);
+  positionRef.current = position;
+  useEffect(() => {
+    if (!online || !position) return;
+    api
+      .updateRiderLocation(position.coords.latitude, position.coords.longitude)
+      .then(() => setLocError(null))
+      .catch((err) => setLocError(err.message));
+  }, [online, position]);
+
+  // …and on a heartbeat so a stationary rider never goes stale.
+  useEffect(() => {
+    if (!online) return undefined;
+    const id = setInterval(() => {
+      const pos = positionRef.current;
+      if (!pos) return;
+      api.updateRiderLocation(pos.coords.latitude, pos.coords.longitude).catch((err) =>
+        setLocError(err.message),
+      );
+    }, LOCATION_INTERVAL_MS);
+    return () => clearInterval(id);
+  }, [online]);
 
   async function toggleOnline() {
     if (!rider || toggling) return;
@@ -28,8 +60,6 @@ export default function RiderDashboard() {
       setToggling(false);
     }
   }
-
-  const online = rider?.availability_status === 'online';
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -64,12 +94,20 @@ export default function RiderDashboard() {
           {toggling ? 'Updating…' : online ? 'Go Offline' : 'Go Online'}
         </button>
 
-        {/* Map placeholder — real map + GPS sharing land in Phase 4/5 */}
+        {online && (
+          <p className="mt-3 rounded-lg bg-blue-50 px-4 py-3 text-sm text-blue-700">
+            {position
+              ? `📍 Sharing location (${position.coords.latitude.toFixed(4)}, ${position.coords.longitude.toFixed(4)})`
+              : locError || 'Waiting for GPS fix…'}
+          </p>
+        )}
+
+        {/* Map placeholder — real map lands in Phase 5 */}
         <div className="mt-6 flex aspect-square items-center justify-center rounded-2xl border-2 border-dashed border-gray-300 bg-white">
           <p className="px-8 text-center text-sm text-gray-400">
             Map view coming soon
             <br />
-            (your location will be shared here when online)
+            (your location will be shown here when online)
           </p>
         </div>
 

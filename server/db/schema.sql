@@ -39,4 +39,14 @@ CREATE TABLE IF NOT EXISTS riders (
   updated_at           TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
+ALTER TABLE riders ADD COLUMN IF NOT EXISTS location_updated_at TIMESTAMPTZ;
+
+-- Last known location of a customer (used to match nearby riders).
+CREATE TABLE IF NOT EXISTS customer_locations (
+  user_id    UUID PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+  latitude   DOUBLE PRECISION NOT NULL,
+  longitude  DOUBLE PRECISION NOT NULL,
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
 CREATE INDEX IF NOT EXISTS idx_riders_availability ON riders(availability_status);

@@ -66,3 +66,64 @@ def update_rider_status(conn, user_id: str, availability_status: str):
            RETURNING *""",
         (availability_status, user_id),
     ).fetchone()
+
+
+def update_rider_location(conn, user_id: str, latitude: float, longitude: float):
+    return conn.execute(
+        """UPDATE riders
+           SET current_latitude = %s, current_longitude = %s,
+               location_updated_at = now(), updated_at = now()
+           WHERE user_id = %s
+           RETURNING *""",
+        (latitude, longitude, user_id),
+    ).fetchone()
+
+
+def upsert_customer_location(conn, user_id: str, latitude: float, longitude: float):
+    return conn.execute(
+        """INSERT INTO customer_locations (user_id, latitude, longitude)
+           VALUES (%s, %s, %s)
+           ON CONFLICT (user_id)
+           DO UPDATE SET latitude = EXCLUDED.latitude,
+                         longitude = EXCLUDED.longitude,
+                         updated_at = now()
+           RETURNING *""",
+        (user_id, latitude, longitude),
+    ).fetchone()
+
+
+# MVP matching radius from the README ("Search radius: 3 km").
+NEARBY_RADIUS_KM = 3.0
+
+
+def find_nearby_riders(conn, latitude: float, longitude: float, radius_km: float = NEARBY_RADIUS_KM):
+    """Riders who are online and within radius_km of the given point.
+
+    Haversine distance in SQL (no extensions needed). location_updated_at must
+    be recent enough that we trust the rider is actually still there.
+    """
+    return conn.execute(
+        """WITH candidates AS (
+             SELECT r.user_id, r.motorcycle_number, r.motorcycle_model,
+                    r.rating, r.rating_count,
+                    r.current_latitude, r.current_longitude,
+                    r.location_updated_at,
+                    u.name, u.phone,
+                    6371.0 * 2 * asin(sqrt(
+                      power(sin(radians(r.current_latitude - %(lat)s) / 2), 2) +
+                      cos(radians(%(lat)s)) * cos(radians(r.current_latitude)) *
+                      power(sin(radians(r.current_longitude - %(lon)s) / 2), 2)
+                    )) AS distance_km
+             FROM riders r
+             JOIN users u ON u.id = r.user_id
+             WHERE r.availability_status = 'online'
+               AND r.current_latitude IS NOT NULL
+               AND r.current_longitude IS NOT NULL
+               AND r.location_updated_at > now() - interval '15 minutes'
+           )
+           SELECT * FROM candidates
+           WHERE distance_km <= %(radius_km)s
+           ORDER BY distance_km ASC
+           LIMIT 20""",
+        {"lat": latitude, "lon": longitude, "radius_km": radius_km},
+    ).fetchall()
