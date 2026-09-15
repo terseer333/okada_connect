@@ -3,9 +3,10 @@ import uuid
 from datetime import datetime
 
 import psycopg
+from psycopg.rows import Row
 
 
-def _row_to_dict(row: psycopg.Row) -> dict:
+def _row_to_dict(row: Row) -> dict:
     return dict(row._asdict()) if hasattr(row, "_asdict") else dict(row)
 
 
@@ -13,7 +14,7 @@ def user_public(row) -> dict:
     """User fields safe to return to the client (never the password hash)."""
     u = _row_to_dict(row)
     return {
-        "id": u["id"],
+        "id": str(u["id"]),
         "name": u["name"],
         "phone": u["phone"],
         "email": u["email"],

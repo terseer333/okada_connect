@@ -10,3 +10,6 @@ coverage/
 .venv/
 __pycache__/
 *.pyc
+
+# Embedded PostgreSQL (pgserver) data dir
+.pgserver/

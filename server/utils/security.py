@@ -25,7 +25,7 @@ def verify_password(password: str, password_hash: str) -> bool:
 
 def sign_token(user_id: str, role: str) -> str:
     payload = {
-        "sub": user_id,
+        "sub": str(user_id),  # UUID objects are not JSON serializable
         "role": role,
         "exp": datetime.now(timezone.utc) + TOKEN_TTL,
     }

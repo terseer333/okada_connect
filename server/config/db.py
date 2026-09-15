@@ -3,7 +3,9 @@ import os
 from pathlib import Path
 
 import psycopg
+import psycopg_pool
 from dotenv import load_dotenv
+from psycopg.rows import namedtuple_row
 
 load_dotenv(Path(__file__).resolve().parent.parent / ".env")
 
@@ -23,7 +25,13 @@ pool = None
 def init_db(app):
     """Create the pool and apply the schema on startup."""
     global pool
-    pool = psycopg_pool.ConnectionPool(DATABASE_URL, open=True, min_size=1, max_size=10)
+    pool = psycopg_pool.ConnectionPool(
+        DATABASE_URL,
+        open=True,
+        min_size=1,
+        max_size=10,
+        kwargs={"row_factory": namedtuple_row},
+    )
 
     schema = SCHEMA_PATH.read_text()
     with pool.connection() as conn:

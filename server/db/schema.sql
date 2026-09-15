@@ -1,7 +1,18 @@
 -- Okada Connect schema
 -- Runs idempotently on server boot (IF NOT EXISTS throughout).
 
-CREATE EXTENSION IF NOT EXISTS pgcrypto; -- gen_random_uuid()
+-- gen_random_uuid() is built into Postgres 13+; pgcrypto provides it on older
+-- servers. Installed inside a DO block so a missing extension doesn't crash
+-- boot on minimal builds (e.g. pgserver's bundled Postgres).
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_available_extensions WHERE name = 'pgcrypto') THEN
+    RAISE NOTICE 'pgcrypto not available; using built-in gen_random_uuid()';
+  ELSE
+    CREATE EXTENSION IF NOT EXISTS pgcrypto;
+  END IF;
+END
+$$;
 
 CREATE TABLE IF NOT EXISTS users (
   id            UUID PRIMARY KEY DEFAULT gen_random_uuid(),
