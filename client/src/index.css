@@ -1,3 +1,169 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* ---------- Landing page animations ---------- */
+
+/* Typewriter cursor */
+.tw-cursor {
+  animation: blink 0.8s step-end infinite;
+}
+@keyframes blink {
+  50% {
+    opacity: 0;
+  }
+}
+
+/* Bike rides across the scene on a loop */
+@keyframes ride {
+  from {
+    left: -15%;
+  }
+  to {
+    left: 112%;
+  }
+}
+.bike {
+  position: absolute;
+  bottom: 18px;
+  animation: ride 7s linear infinite;
+  will-change: left;
+}
+/* Gentle suspension bob + slight forward lean */
+.bike .bike-body {
+  display: inline-block;
+  animation: bob 0.5s ease-in-out infinite alternate;
+}
+@keyframes bob {
+  from {
+    transform: translateY(0) rotate(-1deg);
+  }
+  to {
+    transform: translateY(-2px) rotate(1deg);
+  }
+}
+
+/* Road centre line scrolls left so the bike looks fast even mid-screen */
+@keyframes road-scroll {
+  from {
+    background-position-x: 0;
+  }
+  to {
+    background-position-x: -48px;
+  }
+}
+.road-line {
+  height: 4px;
+  background-image: repeating-linear-gradient(
+    to right,
+    rgba(255, 255, 255, 0.85) 0 24px,
+    transparent 24px 48px
+  );
+  animation: road-scroll 0.35s linear infinite;
+}
+
+/* Dust / speed trail behind the bike */
+.bike .trail {
+  animation: trail 0.4s ease-out infinite;
+}
+@keyframes trail {
+  from {
+    opacity: 0.7;
+    transform: translateX(6px) scaleX(1);
+  }
+  to {
+    opacity: 0;
+    transform: translateX(-18px) scaleX(2.4);
+  }
+}
+
+/* Click the bike → turbo! */
+.road-scene.turbo .bike {
+  animation-duration: 1.6s;
+}
+.road-scene.turbo .road-line {
+  animation-duration: 0.12s;
+}
+.vroom {
+  animation: vroom 1.4s ease-out forwards;
+}
+@keyframes vroom {
+  0% {
+    opacity: 0;
+    transform: translateY(6px) scale(0.7) rotate(-6deg);
+  }
+  15% {
+    opacity: 1;
+    transform: translateY(-6px) scale(1.15) rotate(4deg);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-34px) scale(1) rotate(-2deg);
+  }
+}
+
+/* Shiny CTA light sweep */
+.cta-shine {
+  position: relative;
+  overflow: hidden;
+}
+.cta-shine::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(105deg, transparent 40%, rgba(255, 255, 255, 0.45) 50%, transparent 60%);
+  transform: translateX(-120%);
+  animation: shine 2.8s ease-in-out infinite;
+}
+@keyframes shine {
+  55%,
+  100% {
+    transform: translateX(120%);
+  }
+}
+
+/* Stat tiles + steps fade up with a stagger */
+.rise {
+  opacity: 0;
+  transform: translateY(14px);
+  animation: rise 0.6s ease-out forwards;
+}
+@keyframes rise {
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Pulsing "live" dot */
+.live-dot {
+  animation: pulse-dot 1.6s ease-in-out infinite;
+}
+@keyframes pulse-dot {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgba(22, 163, 74, 0.5);
+  }
+  50% {
+    box-shadow: 0 0 0 6px rgba(22, 163, 74, 0);
+  }
+}
+
+/* Respect users who prefer less motion */
+@media (prefers-reduced-motion: reduce) {
+  .bike,
+  .bike .bike-body,
+  .bike .trail,
+  .road-line,
+  .tw-cursor,
+  .cta-shine::after,
+  .vroom,
+  .live-dot {
+    animation: none !important;
+  }
+  .rise {
+    opacity: 1;
+    transform: none;
+    animation: none !important;
+  }
+}
