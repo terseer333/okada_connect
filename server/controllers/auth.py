@@ -52,7 +52,7 @@ def login(body: LoginRequest, conn: Connection = Depends(get_conn)):
 def me(user=Depends(get_current_user), conn: Connection = Depends(get_conn)):
     row = users.find_user_by_id(conn, user["id"])
     if row is None:
-        raise HTTPException(status_code=404, detail="User not found")
+        raise HTTPException(status_code=401, detail="User account not found — register first")
 
     rider_profile = None
     if row.role == "rider":

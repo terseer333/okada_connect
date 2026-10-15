@@ -17,7 +17,7 @@ PROTECTED = [Depends(require_role("rider"))]
 def get_profile(user=Depends(require_role("rider")), conn: Connection = Depends(get_conn)):
     rider = users.find_rider_by_user_id(conn, user["id"])
     if rider is None:
-        raise HTTPException(status_code=404, detail="Rider profile not found")
+        raise HTTPException(status_code=404, detail="Rider profile not found. Register as rider first to create a profile.")
     return {"rider": users._row_to_dict(rider)}
 
 
@@ -29,7 +29,7 @@ def update_status(
 ):
     rider = users.update_rider_status(conn, user["id"], body.availabilityStatus)
     if rider is None:
-        raise HTTPException(status_code=404, detail="Rider profile not found")
+        raise HTTPException(status_code=404, detail="Rider profile not found. Register as rider first to create a profile.")
     return {"rider": users._row_to_dict(rider)}
 
 
@@ -42,7 +42,7 @@ def update_location(
     """Called periodically by the rider client while online (Phase 4)."""
     rider = users.update_rider_location(conn, user["id"], body.latitude, body.longitude)
     if rider is None:
-        raise HTTPException(status_code=404, detail="Rider profile not found")
+        raise HTTPException(status_code=404, detail="Rider profile not found. Register as rider first to create a profile.")
     return {"rider": users._row_to_dict(rider)}
 
 
