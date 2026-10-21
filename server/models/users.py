@@ -68,6 +68,17 @@ def update_rider_status(conn, user_id: str, availability_status: str):
     ).fetchone()
 
 
+def mark_rider_busy(conn, user_id: str):
+    """Atomically claim a rider for a ride; fails if they aren't online."""
+    return conn.execute(
+        """UPDATE riders
+           SET availability_status = 'busy', updated_at = now()
+           WHERE user_id = %s AND availability_status = 'online'
+           RETURNING *""",
+        (user_id,),
+    ).fetchone()
+
+
 def update_rider_location(conn, user_id: str, latitude: float, longitude: float):
     return conn.execute(
         """UPDATE riders

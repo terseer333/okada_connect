@@ -1,21 +1,21 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 
+type GeolocationOptions = {
+  enabled?: boolean;
+  maxAgeMs?: number;
+};
+
 /**
  * Track the browser's GPS position.
- *
- * @param {object} [options]
- * @param {boolean} [options.enabled] - whether to watch (defaults to true)
- * @param {number} [options.maxAgeMs] - ignore fixes older than this
- * @returns {{ position: GeolocationPosition|null, error: string|null, requestOnce: () => void }}
  */
-export function useGeolocation({ enabled = true, maxAgeMs = 60_000 } = {}) {
-  const [position, setPosition] = useState(null);
-  const [error, setError] = useState(null);
-  const watchIdRef = useRef(null);
+export function useGeolocation({ enabled = true, maxAgeMs = 60_000 }: GeolocationOptions = {}) {
+  const [position, setPosition] = useState<GeolocationPosition | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const watchIdRef = useRef<number | null>(null);
   const lastFixRef = useRef(0);
 
   const handlePosition = useCallback(
-    (pos) => {
+    (pos: GeolocationPosition) => {
       if (pos.timestamp < lastFixRef.current && Date.now() - pos.timestamp > maxAgeMs) {
         return; // stale cached fix
       }
@@ -26,8 +26,8 @@ export function useGeolocation({ enabled = true, maxAgeMs = 60_000 } = {}) {
     [maxAgeMs],
   );
 
-  const handleError = useCallback((err) => {
-    const messages = {
+  const handleError = useCallback((err: GeolocationPositionError) => {
+    const messages: Record<number, string> = {
       1: 'Location permission denied. Enable it in your browser settings to use Okada Connect.',
       2: 'Location unavailable. Try moving outdoors near a window.',
       3: 'Location request timed out. Try again.',

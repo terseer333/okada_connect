@@ -14,7 +14,13 @@ SCHEMA_PATH = Path(__file__).resolve().parent.parent / "db" / "schema.sql"
 
 
 def get_conn():
-    """Yield a pooled connection (used as a FastAPI dependency)."""
+    """Yield a pooled connection (used as a FastAPI dependency).
+
+    The pool runs in autocommit mode, so each statement is durable the moment
+    it executes: a client can never observe a response whose writes are still
+    pending, and a failed request can never leave an aborted transaction
+    behind for the next one.
+    """
     with pool.connection() as conn:
         yield conn
 
@@ -30,7 +36,10 @@ def init_db(app):
         open=True,
         min_size=1,
         max_size=10,
-        kwargs={"row_factory": namedtuple_row},
+        # autocommit: every statement lands immediately, so a response can
+        # never be sent before the data it describes is committed (FastAPI
+        # finalizes generator dependencies after the response is sent).
+        kwargs={"row_factory": namedtuple_row, "autocommit": True},
     )
 
     schema = SCHEMA_PATH.read_text()

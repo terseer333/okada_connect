@@ -49,4 +49,25 @@ CREATE TABLE IF NOT EXISTS customer_locations (
   updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
+-- Ride requests (Phase 6) and lifecycle (Phase 7).
+CREATE TABLE IF NOT EXISTS ride_requests (
+  id               UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  customer_id      UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  rider_id         UUID REFERENCES users(id) ON DELETE SET NULL,
+  pickup_latitude  DOUBLE PRECISION NOT NULL,
+  pickup_longitude DOUBLE PRECISION NOT NULL,
+  status           TEXT NOT NULL DEFAULT 'pending'
+                   CHECK (status IN ('pending', 'accepted', 'arriving', 'in_progress', 'completed', 'cancelled')),
+  requested_at     TIMESTAMPTZ NOT NULL DEFAULT now(),
+  accepted_at      TIMESTAMPTZ,
+  started_at       TIMESTAMPTZ,
+  completed_at     TIMESTAMPTZ,
+  cancelled_at     TIMESTAMPTZ,
+  updated_at       TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_ride_requests_status ON ride_requests(status);
+CREATE INDEX IF NOT EXISTS idx_ride_requests_customer ON ride_requests(customer_id);
+CREATE INDEX IF NOT EXISTS idx_ride_requests_rider ON ride_requests(rider_id);
+
 CREATE INDEX IF NOT EXISTS idx_riders_availability ON riders(availability_status);

@@ -13,3 +13,4 @@ __pycache__/
 
 # Embedded PostgreSQL (pgserver) data dir
 .pgserver/
+.pgdata/

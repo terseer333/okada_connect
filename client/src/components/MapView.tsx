@@ -2,21 +2,32 @@ import { useEffect, useRef } from 'react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 
+type MarkerKind = 'customer' | 'rider' | 'pickup' | 'default';
+
+export type MapMarker = {
+  id: string;
+  position: [number, number];
+  label?: string;
+  kind?: MarkerKind;
+};
+
+type MapViewProps = {
+  center: [number, number];
+  markers?: MapMarker[];
+  onPick?: (position: [number, number]) => void;
+};
+
 /**
  * Imperative Leaflet map wrapper.
- *
- * @param {object} props
- * @param {[number, number]} props.center - [lat, lon] to keep in view
- * @param {Array} props.markers - [{ id, position: [lat, lon], label, kind }]
- * @param {Function} [props.onPick] - called with [lat, lon] when the user taps the map
  */
-export default function MapView({ center, markers = [], onPick }) {
-  const containerRef = useRef(null);
-  const mapRef = useRef(null);
-  const markerRefs = useRef({}); // id -> L.Marker
+export default function MapView({ center, markers = [], onPick }: MapViewProps) {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const mapRef = useRef<L.Map | null>(null);
+  const markerRefs = useRef<Record<string, L.Marker>>({});
 
   // Create the map once.
   useEffect(() => {
+    if (!containerRef.current) return undefined;
     const map = L.map(containerRef.current, {
       attributionControl: false,
       zoomControl: true,
@@ -25,7 +36,7 @@ export default function MapView({ center, markers = [], onPick }) {
       maxZoom: 19,
       attribution: '&copy; OpenStreetMap contributors',
     }).addTo(map);
-    if (onPick) map.on('click', (e) => onPick([e.latlng.lat, e.latlng.lng]));
+    if (onPick) map.on('click', (e: L.LeafletMouseEvent) => onPick([e.latlng.lat, e.latlng.lng]));
     mapRef.current = map;
     return () => {
       map.remove();
@@ -57,7 +68,7 @@ export default function MapView({ center, markers = [], onPick }) {
         markerRefs.current[id].setLatLng(spec.position);
         continue;
       }
-      const icon = MARKER_ICONS[spec.kind] || MARKER_ICONS.default;
+      const icon = MARKER_ICONS[spec.kind ?? 'default'];
       const marker = L.marker(spec.position, { icon, title: spec.label }).addTo(map);
       if (spec.label) marker.bindPopup(spec.label);
       markerRefs.current[id] = marker;
@@ -67,19 +78,18 @@ export default function MapView({ center, markers = [], onPick }) {
   return <div ref={containerRef} className="h-full w-full" />;
 }
 
-const pin = (emoji, bg) =>
+const pin = (emoji: string) =>
   L.divIcon({
     className: '',
     html: `<div style="font-size:26px; line-height:26px; filter:drop-shadow(0 1px 2px rgba(0,0,0,.4));">${emoji}</div>`,
     iconSize: [26, 26],
     iconAnchor: [13, 26],
     popupAnchor: [0, -26],
-    background: bg,
   });
 
-const MARKER_ICONS = {
-  customer: pin('📍', '#ef4444'),
-  rider: pin('🏍️', '#22c55e'),
-  pickup: pin('🎯', '#f59e0b'),
-  default: pin('📌', '#6b7280'),
+const MARKER_ICONS: Record<MarkerKind, L.DivIcon> = {
+  customer: pin('📍'),
+  rider: pin('🏍️'),
+  pickup: pin('🎯'),
+  default: pin('📌'),
 };
