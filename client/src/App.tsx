@@ -2,7 +2,8 @@ import { useState, type ReactNode } from "react"
 import { Navigate, Route, Routes, useNavigate } from "react-router-dom"
 
 import { useAuth } from "./context/AuthContext"
-import { RiderFigure } from "./components/RiderFigure"
+import { PersistentBackgroundVideo } from "./components/PersistentBackgroundVideo"
+import { AnimatedCounter } from "./components/AnimatedCounter"
 import Login from "./pages/Login"
 import Register from "./pages/Register"
 import CustomerDashboard from "./pages/CustomerDashboard"
@@ -147,46 +148,8 @@ function RiderIllustration() {
   return (
     <div
       className="hero-visual"
-      aria-label="Okada rider travelling through the city"
+      aria-label="Live ride status cards"
     >
-      <div className="sun" />
-      <div className="cloud cloud-one" />
-      <div className="cloud cloud-two" />
-      <div className="location-grid">
-        <span>Central Market</span>
-        <span>Victoria Ave.</span>
-        <span>City Centre</span>
-      </div>
-      <div className="city">
-        {[44, 72, 106, 62, 130, 82, 118, 55, 98, 70, 125, 88].map(
-          (height, index) => (
-            <i key={index} style={{ height }} />
-          ),
-        )}
-      </div>
-      <div className="route-line">
-        <span />
-        <span />
-        <span />
-        <i className="moving-location">
-          <Icon name="location" size={15} />
-        </i>
-      </div>
-      <div className="ground-road">
-        <i />
-        <i />
-        <i />
-      </div>
-      <div className="rider">
-        <img
-          className="motorcycle-photo"
-          src="/commuter-motorcycle-reference.png"
-          alt="Red commuter motorcycle"
-        />
-        <div className="mounted-rider">
-          <RiderFigure />
-        </div>
-      </div>
       <div className="floating-card driver-card">
         <span className="avatar">AO</span>
         <span>
@@ -259,10 +222,29 @@ function LandingPage() {
             className={menuOpen ? "nav-links open" : "nav-links"}
             aria-label="Main navigation"
           >
-            <a href="#home">Home</a>
-            <a href="#why">Why us</a>
-            <a href="#how">How it works</a>
-            <a href="#safety">Safety</a>
+            <a href="#home" onClick={() => setMenuOpen(false)}>Home</a>
+            <a href="#why" onClick={() => setMenuOpen(false)}>Why us</a>
+            <a href="#how" onClick={() => setMenuOpen(false)}>How it works</a>
+            <a href="#safety" onClick={() => setMenuOpen(false)}>Safety</a>
+            <div className="mobile-nav-cta">
+              <button
+                className="text-button"
+                onClick={() => {
+                  setMenuOpen(false)
+                  go("/login")
+                }}
+              >
+                Sign in
+              </button>
+              <Button
+                onClick={() => {
+                  setMenuOpen(false)
+                  go("/login?role=customer")
+                }}
+              >
+                Book a ride <Icon name="arrow" size={17} />
+              </Button>
+            </div>
           </nav>
           <div className="nav-actions">
             <button className="text-button" onClick={() => go("/login")}>
@@ -329,25 +311,25 @@ function LandingPage() {
       >
         <div>
           <strong>
-            10K<span>+</span>
+            <AnimatedCounter end={10} suffix="K" accentSuffix="+" durationMs={1800} />
           </strong>
           <p>Active riders</p>
         </div>
         <div>
           <strong>
-            50K<span>+</span>
+            <AnimatedCounter end={50} suffix="K" accentSuffix="+" durationMs={2000} />
           </strong>
           <p>Happy customers</p>
         </div>
         <div>
           <strong>
-            98<span>%</span>
+            <AnimatedCounter end={98} accentSuffix="%" durationMs={2100} />
           </strong>
           <p>On-time arrivals</p>
         </div>
         <div>
           <strong>
-            4.9<span>/5</span>
+            <AnimatedCounter end={4.9} decimals={1} accentSuffix="/5" durationMs={1900} />
           </strong>
           <p>Average rating</p>
         </div>
@@ -586,27 +568,30 @@ function Protected({ roles, children }: { roles?: Array<"customer" | "rider">; c
 
 export default function App() {
   return (
-    <Routes>
-      <Route path="/" element={<Landing />} />
-      <Route path="/login" element={<Login />} />
-      <Route path="/register" element={<Register />} />
-      <Route
-        path="/customer"
-        element={
-          <Protected roles={["customer"]}>
-            <CustomerDashboard />
-          </Protected>
-        }
-      />
-      <Route
-        path="/rider"
-        element={
-          <Protected roles={["rider"]}>
-            <RiderDashboard />
-          </Protected>
-        }
-      />
-      <Route path="*" element={<Navigate to="/" replace />} />
-    </Routes>
+    <div className="app-shell-root">
+      <PersistentBackgroundVideo />
+      <Routes>
+        <Route path="/" element={<Landing />} />
+        <Route path="/login" element={<Login />} />
+        <Route path="/register" element={<Register />} />
+        <Route
+          path="/customer"
+          element={
+            <Protected roles={["customer"]}>
+              <CustomerDashboard />
+            </Protected>
+          }
+        />
+        <Route
+          path="/rider"
+          element={
+            <Protected roles={["rider"]}>
+              <RiderDashboard />
+            </Protected>
+          }
+        />
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+    </div>
   )
 }
