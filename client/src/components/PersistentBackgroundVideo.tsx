@@ -104,7 +104,7 @@ export function PersistentBackgroundVideo() {
         muted
         playsInline
       >
-        <source src="/background-video.mp4" type="video/mp4" />
+        <source src="/background2.mp4" type="video/mp4" />
       </video>
       <div className={`persistent-video-overlay overlay-${mode}`} />
     </div>

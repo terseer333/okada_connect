@@ -7,7 +7,7 @@ interface BackgroundVideoProps {
 }
 
 export function BackgroundVideo({
-  src = '/background-video.mp4',
+  src = '/background2.mp4',
   className = '',
   overlayClassName = '',
 }: BackgroundVideoProps) {

@@ -26,11 +26,21 @@ def get_conn():
 
 
 pool = None
+_pg_server = None
 
 
 def init_db(app):
     """Create the pool and apply the schema on startup."""
-    global pool
+    global pool, _pg_server
+    if ".pgserver" in DATABASE_URL:
+        import pgserver
+        pg_dir = DATABASE_URL.split("host=")[-1].split("&")[0]
+        _pg_server = pgserver.get_server(pg_dir)
+        try:
+            _pg_server.psql("CREATE DATABASE okada_connect;")
+        except Exception:
+            pass
+
     pool = psycopg_pool.ConnectionPool(
         DATABASE_URL,
         open=True,
