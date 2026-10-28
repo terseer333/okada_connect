@@ -4,126 +4,13 @@ import { Navigate, Route, Routes, useNavigate } from "react-router-dom"
 import { useAuth } from "./context/AuthContext"
 import { PersistentBackgroundVideo } from "./components/PersistentBackgroundVideo"
 import { AnimatedCounter } from "./components/AnimatedCounter"
+import { Icon, type IconName } from "./components/Icon"
+import { Logo, Eyebrow, RiderIllustration } from "./components/Brand"
+import { FeatureRiderArtwork, type FeatureGoalKind } from "./components/FeatureRiderArtwork"
 import Login from "./pages/Login"
 import Register from "./pages/Register"
 import CustomerDashboard from "./pages/CustomerDashboard"
 import RiderDashboard from "./pages/RiderDashboard"
-
-type IconName = "arrow" | "bolt" | "check" | "clock" | "eye" | "location" | "mail" | "menu" | "phone" | "play" | "shield" | "star" | "user"
-
-function Icon({ name, size = 20 }: { name: IconName; size?: number }) {
-  const paths: Record<IconName, ReactNode> = {
-    arrow: (
-      <>
-        <path d="M5 12h14" />
-        <path d="m14 7 5 5-5 5" />
-      </>
-    ),
-    bolt: <path d="m13 2-9 12h7l-1 8 9-12h-7l1-8Z" />,
-    check: <path d="m5 12 4 4L19 6" />,
-    clock: (
-      <>
-        <circle cx="12" cy="12" r="9" />
-        <path d="M12 7v5l3 2" />
-      </>
-    ),
-    eye: (
-      <>
-        <path d="M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6Z" />
-        <circle cx="12" cy="12" r="2.5" />
-      </>
-    ),
-    location: (
-      <>
-        <path d="M20 10c0 5-8 12-8 12S4 15 4 10a8 8 0 1 1 16 0Z" />
-        <circle cx="12" cy="10" r="2.5" />
-      </>
-    ),
-    mail: (
-      <>
-        <rect x="3" y="5" width="18" height="14" rx="3" />
-        <path d="m4 7 8 6 8-6" />
-      </>
-    ),
-    menu: (
-      <>
-        <path d="M4 7h16M4 12h16M4 17h16" />
-      </>
-    ),
-    phone: (
-      <>
-        <rect x="7" y="2" width="10" height="20" rx="2" />
-        <path d="M10 5h4M11 18h2" />
-      </>
-    ),
-    play: <path d="m9 7 8 5-8 5V7Z" />,
-    shield: (
-      <>
-        <path d="M12 3 4 6v5c0 5 3.4 8.2 8 10 4.6-1.8 8-5 8-10V6l-8-3Z" />
-        <path d="m8.5 12 2.2 2.2 4.8-5" />
-      </>
-    ),
-    star: (
-      <path d="m12 2 3 6 6.5 1-4.7 4.6 1.1 6.4-5.9-3.1L6.1 20l1.1-6.4L2.5 9 9 8l3-6Z" />
-    ),
-    user: (
-      <>
-        <circle cx="12" cy="8" r="4" />
-        <path d="M4 21a8 8 0 0 1 16 0" />
-      </>
-    ),
-  }
-  return (
-    <svg
-      width={size}
-      height={size}
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.8"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden="true"
-    >
-      {paths[name]}
-    </svg>
-  )
-}
-
-function Logo({ light = false }: { light?: boolean }) {
-  return (
-    <div
-      className={`logo ${light ? "logo-light" : ""}`}
-      aria-label="Okada Connect"
-    >
-      <div className="logo-mark">
-        <span className="logo-wheel logo-wheel-one" />
-        <span className="logo-wheel logo-wheel-two" />
-        <span className="logo-road" />
-      </div>
-      <div className="logo-type">
-        <strong>
-          <span>OKADA</span> CONNECT
-        </strong>
-        <small>FAST · SAFE · RELIABLE</small>
-      </div>
-    </div>
-  )
-}
-
-function Eyebrow({
-  children,
-  light = false,
-}: {
-  children: ReactNode
-  light?: boolean
-}) {
-  return (
-    <div className={`eyebrow ${light ? "eyebrow-light" : ""}`}>
-      <span /> {children}
-    </div>
-  )
-}
 
 function Button({
   children,
@@ -144,62 +31,47 @@ function Button({
   )
 }
 
-function RiderIllustration() {
-  return (
-    <div
-      className="hero-visual"
-      aria-label="Live ride status cards"
-    >
-      <div className="floating-card driver-card">
-        <span className="avatar">AO</span>
-        <span>
-          <b>Ahmed is arriving</b>
-          <small>Verified rider · 4.9</small>
-        </span>
-        <em>2 min</em>
-      </div>
-      <div className="floating-card safety-card">
-        <span className="floating-icon">
-          <Icon name="shield" />
-        </span>
-        <span>
-          <b>Trip protected</b>
-          <small>Live safety monitoring</small>
-        </span>
-      </div>
-      <div className="floating-card live-location-card">
-        <span className="live-location-icon">
-          <Icon name="location" size={18} />
-        </span>
-        <span>
-          <b>
-            Location active <i />
-          </b>
-          <small>Updating now · City Centre</small>
-        </span>
-      </div>
-    </div>
-  )
+interface Feature {
+  icon: IconName
+  title: string
+  text: string
+  accent: "blue" | "red" | "yellow"
+  goalKind: FeatureGoalKind
+  badge: string
+  goalTitle: string
+  goalDescription: string
 }
 
-const features = [
+const features: Feature[] = [
   {
-    icon: "location" as IconName,
+    icon: "location",
     title: "Live tracking",
     text: "Follow every turn in real time and share your trip with people you trust.",
     accent: "blue",
+    goalKind: "tracking",
+    badge: "Live GPS Active",
+    goalTitle: "100% Real-Time Visibility",
+    goalDescription: "Follow exact route milestones with real-time GPS tracking and live journey sharing with trusted contacts.",
   },
   {
-    icon: "shield" as IconName,
+    icon: "shield",
     title: "Safety first",
     text: "Every rider is verified, every trip is monitored, and support is always close.",
     accent: "red",
+    goalKind: "safety",
+    badge: "100% Verified",
+    goalTitle: "Zero-Compromise Protection",
+    goalDescription: "Vetted riders, mandatory helmet compliance, and 24/7 security monitoring protect every single kilometer.",
   },
   {
-    icon: "bolt" as IconName,
-    title: "Faster pickups",
+    icon: "bolt",
+    title: "Fast pickup",
     text: "Smart matching finds the closest available rider so you spend less time waiting.",
     accent: "yellow",
+    goalKind: "pickup",
+    badge: "Under 3-Min Arrival",
+    goalTitle: "Lightning-Fast Dispatch",
+    goalDescription: "Smart proximity matching connects you to the nearest active rider to get you moving in under 3 minutes.",
   },
 ]
 
@@ -351,12 +223,34 @@ function LandingPage() {
         <div className="feature-grid">
           {features.map((feature, index) => (
             <article className="feature-card" key={feature.title}>
-              <div className={`feature-icon ${feature.accent}`}>
-                <Icon name={feature.icon} size={28} />
+              <div className="feature-card-header">
+                <div className={`feature-icon ${feature.accent}`}>
+                  <Icon name={feature.icon} size={26} />
+                </div>
+                <span className="feature-number">0{index + 1}</span>
               </div>
-              <span className="feature-number">0{index + 1}</span>
-              <h3>{feature.title}</h3>
-              <p>{feature.text}</p>
+
+              <div className="feature-media">
+                <div className="feature-image-wrapper">
+                  <FeatureRiderArtwork kind={feature.goalKind} />
+                  <span className={`feature-media-badge ${feature.accent}`}>
+                    {feature.badge}
+                  </span>
+                </div>
+                <figure className="feature-image-caption">
+                  <div className="caption-tag-row">
+                    <span className="caption-tag">Goal Achieved</span>
+                    <strong className="goal-title">{feature.goalTitle}</strong>
+                  </div>
+                  <p>{feature.goalDescription}</p>
+                </figure>
+              </div>
+
+              <div className="feature-content">
+                <h3>{feature.title}</h3>
+                <p>{feature.text}</p>
+              </div>
+
               <button className="learn-button">
                 Learn more <Icon name="arrow" size={16} />
               </button>

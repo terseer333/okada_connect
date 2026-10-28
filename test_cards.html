@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html>
+<head>
+<style>
+body { font-family: sans-serif; background: #eef2f6; padding: 20px; display: flex; gap: 20px; }
+.card {
+  width: 420px;
+  background: #ffffff;
+  border-radius: 24px;
+  padding: 16px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.06);
+  margin-bottom: 16px;
+  border: 1.5px solid transparent;
+}
+.card-blue { border-color: #dbeafe; }
+.card-green { border-color: #dcfce7; }
+.card-orange { border-color: #fef3c7; }
+.left { display: flex; align-items: center; gap: 14px; }
+.icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  color: #fff;
+}
+.icon-blue { background: #0066ff; }
+.icon-green { background: #009647; }
+.icon-orange { background: #f59e0b; }
+.text { max-width: 200px; }
+.text h4 { margin: 0 0 4px; font-size: 18px; font-weight: 800; color: #102a43; }
+.text p { margin: 0; font-size: 13px; color: #526776; line-height: 1.4; font-weight: 500; }
+.art { width: 120px; height: 95px; flex-shrink: 0; }
+.ref-col { display: flex; flex-direction: column; gap: 16px; }
+.ref-col img { width: 340px; border-radius: 16px; }
+</style>
+</head>
+<body>
+<div class='test-col'>
+  <!-- Card 1 -->
+  <div class='card card-blue'>
+    <div class='left'>
+      <div class='icon icon-blue'>
+        <svg width='22' height='22' viewBox='0 0 24 24' fill='currentColor'>
+          <path d='M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z'/>
+        </svg>
+      </div>
+      <div class='text'>
+        <h4>Live Tracking</h4>
+        <p>See your rider's location in real time and know exactly when they'll arrive.</p>
+      </div>
+    </div>
+    <div class='art'>
+      <svg viewBox='0 0 120 95' width='100%' height='100%' fill='none'>
+        <ellipse cx='85' cy='48' rx='45' ry='44' fill='#e0f2fe' opacity='0.85'/>
+        <g transform='translate(16, 1) rotate(-5 50 48)'>
+          <!-- Phone frame -->
+          <rect x='28' y='5' width='66' height='88' rx='13' fill='#0f172a' />
+          <rect x='30.5' y='7.5' width='61' height='83' rx='10.5' fill='#f8fafc' />
+          <!-- Notch -->
+          <rect x='52' y='9' width='16' height='2.5' rx='1.2' fill='#0f172a' />
+          <circle cx='48' cy='10.2' r='1' fill='#0f172a' />
+          <!-- Map streets -->
+          <clipPath id='screen-clip'>
+            <rect x='30.5' y='7.5' width='61' height='83' rx='10.5' />
+          </clipPath>
+          <g clip-path='url(#screen-clip)'>
+            <rect x='30.5' y='7.5' width='61' height='83' fill='#f1f5f9'/>
+            <path d='M25 32 L95 32 M25 62 L95 62 M48 5 L48 95 M72 5 L72 95' stroke='#ffffff' stroke-width='6' />
+            <path d='M35 5 L85 95' stroke='#ffffff' stroke-width='5' />
+            <!-- Blue route -->
+            <path d='M 45 74 Q 53 70 55 62 T 58 50 T 70 45 T 76 43' fill='none' stroke='#0066ff' stroke-width='3.2' stroke-linecap='round' stroke-linejoin='round' />
+            <!-- Red pin -->
+            <g transform='translate(71, 31)'>
+              <path d='M 5 0 C 2.2 0 0 2.2 0 5 C 0 8.5 5 13 5 13 C 5 13 10 8.5 10 5 C 10 2.2 7.8 0 5 0 Z' fill='#ef4444' />
+              <circle cx='5' cy='4.8' r='1.8' fill='#ffffff' />
+            </g>
+            <!-- 2.4 km badge -->
+            <g transform='translate(45, 13)'>
+              <rect x='0' y='0' width='42' height='16' rx='8' fill='#0066ff' />
+              <polygon points='20,16 24,16 22,19' fill='#0066ff' />
+              <circle cx='6' cy='8' r='2' fill='#ffffff' />
+              <circle cx='6' cy='8' r='0.9' fill='#0066ff' />
+              <text x='11' y='11' fill='#ffffff' font-size='6.8' font-weight='800' font-family='sans-serif'>2.4 km</text>
+            </g>
+            <!-- Okada rider -->
+            <g transform='translate(36, 64)'>
+              <circle cx='4' cy='12' r='4' fill='#1e293b'/>
+              <circle cx='14' cy='9' r='4' fill='#1e293b'/>
+              <path d='M3 10 L10 10 L13 6 L8 6 Z' fill='#ef4444'/>
+              <path d='M9 5 L10 9' stroke='#1e293b' stroke-width='2' stroke-linecap='round'/>
+              <path d='M7 0 L10 5 L8 6 Z' fill='#eab308'/>
+              <circle cx='7' cy='-2' r='3' fill='#ef4444'/>
+            </g>
+          </g>
+        </g>
+      </svg>
+    </div>
+  </div>
+
+  <!-- Card 2 -->
+  <div class='card card-green'>
+    <div class='left'>
+      <div class='icon icon-green'>
+        <svg width='22' height='22' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'>
+          <path d='M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z'/>
+          <path d='m9 12 2 2 4-4'/>
+        </svg>
+      </div>
+      <div class='text'>
+        <h4>Safety First</h4>
+        <p>Verified riders, real-time monitoring and your safety is our priority.</p>
+      </div>
+    </div>
+    <div class='art'>
+      <svg viewBox='0 0 120 95' width='100%' height='100%' fill='none'>
+        <ellipse cx='70' cy='48' rx='42' ry='40' fill='#dcfce7' opacity='0.85'/>
+        <ellipse cx='70' cy='48' rx='34' ry='34' fill='none' stroke='#86efac' stroke-width='1.6' opacity='0.75'/>
+        <!-- Radiating sparks -->
+        <line x1='94' y1='26' x2='101' y2='20' stroke='#10b981' stroke-width='3' stroke-linecap='round'/>
+        <line x1='98' y1='34' x2='105' y2='34' stroke='#10b981' stroke-width='3' stroke-linecap='round'/>
+        <line x1='38' y1='64' x2='45' y2='64' stroke='#10b981' stroke-width='3' stroke-linecap='round'/>
+        <line x1='41' y1='72' x2='47' y2='68' stroke='#10b981' stroke-width='3' stroke-linecap='round'/>
+        <!-- Shield with halo -->
+        <path d='M 70 20 C 84 20, 90 26, 90 39 C 90 57, 70 70, 70 70 C 70 70, 50 57, 50 39 C 50 26, 56 20, 70 20 Z' fill='#ffffff' />
+        <!-- Split green shield -->
+        <path d='M 70 23 C 58 23, 53 28, 53 39 C 53 54, 70 66, 70 66 L 70 23 Z' fill='#10b981'/>
+        <path d='M 70 23 C 82 23, 87 28, 87 39 C 87 54, 70 66, 70 66 L 70 23 Z' fill='#059669'/>
+        <!-- Checkmark -->
+        <path d='M 61 43 L 67 49 L 78 37' fill='none' stroke='#ffffff' stroke-width='4.2' stroke-linecap='round' stroke-linejoin='round'/>
+      </svg>
+    </div>
+  </div>
+
+  <!-- Card 3 -->
+  <div class='card card-orange'>
+    <div class='left'>
+      <div class='icon icon-orange'>
+        <svg width='22' height='22' viewBox='0 0 24 24' fill='currentColor'>
+          <path d='M13 2L3 14h9l-1 8 10-12h-9l1-8z'/>
+        </svg>
+      </div>
+      <div class='text'>
+        <h4>Fast Pickup</h4>
+        <p>Get to your destination faster, no long wait.</p>
+      </div>
+    </div>
+    <div class='art'>
+      <svg viewBox='0 0 120 95' width='100%' height='100%' fill='none'>
+        <ellipse cx='72' cy='48' rx='42' ry='40' fill='#fef3c7' opacity='0.9'/>
+        <!-- Speed lines -->
+        <line x1='30' y1='36' x2='50' y2='36' stroke='#f59e0b' stroke-width='3.6' stroke-linecap='round'/>
+        <line x1='20' y1='46' x2='54' y2='46' stroke='#f59e0b' stroke-width='4.2' stroke-linecap='round'/>
+        <line x1='26' y1='56' x2='50' y2='56' stroke='#f59e0b' stroke-width='3.8' stroke-linecap='round'/>
+        <line x1='36' y1='66' x2='48' y2='66' stroke='#f59e0b' stroke-width='3.2' stroke-linecap='round'/>
+        <!-- Stopwatch -->
+        <g transform='translate(74, 50)'>
+          <!-- Crown & pusher -->
+          <rect x='-3' y='-33' width='6' height='5' rx='1.2' fill='#f59e0b'/>
+          <path d='M -5 -33 L 5 -33' stroke='#f59e0b' stroke-width='2.6' stroke-linecap='round'/>
+          <rect x='13' y='-26' width='4' height='6' rx='1.2' fill='#f59e0b' transform='rotate(38 15 -23)'/>
+          <!-- Outer circle -->
+          <circle cx='0' cy='0' r='25' fill='#f59e0b'/>
+          <circle cx='0' cy='0' r='19' fill='#ffffff'/>
+          <!-- Ticks -->
+          <line x1='0' y1='-17' x2='0' y2='-14' stroke='#f59e0b' stroke-width='1.8' stroke-linecap='round'/>
+          <line x1='17' y1='0' x2='14' y2='0' stroke='#f59e0b' stroke-width='1.8' stroke-linecap='round'/>
+          <line x1='0' y1='17' x2='0' y2='14' stroke='#f59e0b' stroke-width='1.8' stroke-linecap='round'/>
+          <line x1='-17' y1='0' x2='-14' y2='0' stroke='#f59e0b' stroke-width='1.8' stroke-linecap='round'/>
+          <circle cx='12' cy='-12' r='1.2' fill='#f59e0b'/>
+          <circle cx='12' cy='12' r='1.2' fill='#f59e0b'/>
+          <circle cx='-12' cy='12' r='1.2' fill='#f59e0b'/>
+          <circle cx='-12' cy='-12' r='1.2' fill='#f59e0b'/>
+          <!-- Hands -->
+          <line x1='0' y1='0' x2='0' y2='-13' stroke='#f59e0b' stroke-width='2.6' stroke-linecap='round'/>
+          <line x1='0' y1='0' x2='10' y2='-7' stroke='#f59e0b' stroke-width='3' stroke-linecap='round'/>
+          <circle cx='0' cy='0' r='2.5' fill='#d97706'/>
+        </g>
+      </svg>
+    </div>
+  </div>
+</div>
+
+<div class='ref-col'>
+  <h3>Reference Screenshot:</h3>
+  <img src='downloaded_file' />
+</div>
+</body>
+</html>

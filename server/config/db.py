@@ -7,9 +7,15 @@ import psycopg_pool
 from dotenv import load_dotenv
 from psycopg.rows import namedtuple_row
 
+# Load .env from repo root or server directory
+load_dotenv(Path(__file__).resolve().parent.parent.parent / ".env")
 load_dotenv(Path(__file__).resolve().parent.parent / ".env")
 
-DATABASE_URL = os.environ["DATABASE_URL"]
+REPO_ROOT = Path(__file__).resolve().parent.parent.parent
+DATABASE_URL = os.environ.get(
+    "DATABASE_URL",
+    f"postgresql://postgres:@/okada_connect?host={REPO_ROOT / '.pgserver'}",
+)
 SCHEMA_PATH = Path(__file__).resolve().parent.parent / "db" / "schema.sql"
 
 
