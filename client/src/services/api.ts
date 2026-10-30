@@ -83,8 +83,8 @@ export const api = {
   completeRide: (rideId: string) =>
     request(`/rides/${rideId}/complete`, { method: 'POST', auth: true }),
   nearbyRideRequests: () => request('/rides/nearby-requests', { auth: true }),
-  acceptRide: (rideId: string) =>
-    request(`/rides/${rideId}/accept`, { method: 'POST', auth: true }),
+  acceptRide: (rideId: string, coords?: { lat: number; lng: number }) =>
+    request(`/rides/${rideId}/accept`, { method: 'POST', body: coords, auth: true }),
   arrivingRide: (rideId: string) =>
     request(`/rides/${rideId}/arriving`, { method: 'POST', auth: true }),
   startRide: (rideId: string) => request(`/rides/${rideId}/start`, { method: 'POST', auth: true }),

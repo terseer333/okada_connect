@@ -163,8 +163,17 @@ def ride_tracking(
     serialized = rides.serialize_ride(row)
     status = serialized["status"]
 
-    cust_lat = serialized.get("customerLatitude") or serialized["pickupLatitude"]
-    cust_lng = serialized.get("customerLongitude") or serialized["pickupLongitude"]
+    # Retrieve live customer GPS location
+    cust_loc = conn.execute(
+        "SELECT latitude, longitude FROM customer_locations WHERE user_id = %s",
+        (str(row.customer_id),),
+    ).fetchone()
+    if cust_loc and cust_loc[0] is not None:
+        cust_lat = cust_loc[0]
+        cust_lng = cust_loc[1]
+    else:
+        cust_lat = serialized.get("customerLatitude") or serialized["pickupLatitude"]
+        cust_lng = serialized.get("customerLongitude") or serialized["pickupLongitude"]
     customer_pos = {"lat": cust_lat, "lng": cust_lng}
 
     pickup_info = {
@@ -179,6 +188,16 @@ def ride_tracking(
     }
 
     rider_info = serialized.get("rider")
+    if row.rider_id:
+        r_loc = conn.execute(
+            "SELECT current_latitude, current_longitude FROM riders WHERE user_id = %s",
+            (str(row.rider_id),),
+        ).fetchone()
+        if r_loc and r_loc[0] is not None:
+            if rider_info is None:
+                rider_info = {}
+            rider_info["latitude"] = r_loc[0]
+            rider_info["longitude"] = r_loc[1]
     has_rider_pos = rider_info is not None and rider_info.get("latitude") is not None and rider_info.get("longitude") is not None
 
     if status == "accepted":
@@ -331,15 +350,23 @@ def nearby_requests(
 @router.post("/{ride_id}/accept", dependencies=RIDER_ONLY)
 def accept_ride(
     ride_id: str,
+    payload: dict = None,
     user=Depends(require_role("rider")),
     conn: Connection = Depends(get_conn),
 ):
-    """First rider to accept wins; everyone else gets a 409."""
+    """First rider to accept wins; immediately synchronizes mutual location sharing."""
     ride = rides.get_ride_detail(conn, ride_id)
     if ride is None:
         raise HTTPException(status_code=404, detail="Ride request not found.")
     if ride.status != "pending":
         raise HTTPException(status_code=409, detail="This request was already taken.")
+
+    # Immediately store rider location if provided with accept
+    if payload and isinstance(payload, dict):
+        r_lat = payload.get("lat") or payload.get("latitude")
+        r_lng = payload.get("lng") or payload.get("longitude")
+        if r_lat is not None and r_lng is not None:
+            users.update_rider_location(conn, user["id"], float(r_lat), float(r_lng))
 
     # Claim the rider atomically (fails if they went offline or got busy),
     # then claim the request. Undo the claim if we lost the race for it.
@@ -350,6 +377,16 @@ def accept_ride(
     if updated is None:
         users.update_rider_status(conn, user["id"], "online")
         raise HTTPException(status_code=409, detail="This request was already taken.")
+
+    # Automatically synchronize customer's latest GPS location for the ride
+    cust_loc = conn.execute(
+        "SELECT latitude, longitude FROM customer_locations WHERE user_id = %s",
+        (str(ride.customer_id),),
+    ).fetchone()
+    if cust_loc and cust_loc[0] is not None:
+        rides.update_customer_location_for_active_ride(conn, str(ride.customer_id), cust_loc[0], cust_loc[1])
+    else:
+        rides.update_customer_location_for_active_ride(conn, str(ride.customer_id), ride.pickup_latitude, ride.pickup_longitude)
 
     return {"ride": _serialized(conn, updated)}
 

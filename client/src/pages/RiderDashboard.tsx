@@ -11,9 +11,9 @@ import { useGeolocation } from '../hooks/useGeolocation';
 import { useAuth } from '../context/AuthContext';
 import { api } from '../services/api';
 
-const LOCATION_POST_MS = 4000;
-const REQUESTS_POLL_MS = 4000;
-const TRACKING_POLL_MS = 4000;
+const LOCATION_POST_MS = 2000;
+const REQUESTS_POLL_MS = 3000;
+const TRACKING_POLL_MS = 2000;
 const COUNTDOWN_SECONDS = 15;
 
 type DashboardTab = 'home' | 'history' | 'wallet' | 'settings';
@@ -102,6 +102,7 @@ export default function RiderDashboard() {
   const [errorToast, setErrorToast] = useState<string | null>(null);
   const [isReconnecting, setIsReconnecting] = useState(false);
   const [isSheetExpanded, setIsSheetExpanded] = useState(false);
+  const [navTarget, setNavTarget] = useState<'self' | 'passenger' | 'destination'>('self');
 
   const isOnline = rider?.availability_status === 'online';
   const isBusy = rider?.availability_status === 'busy';
@@ -116,6 +117,13 @@ export default function RiderDashboard() {
       setIsSheetExpanded(true);
     }
   }, [requests.length, isRideActive]);
+
+  // Reset in-app navigation target when ride ends
+  useEffect(() => {
+    if (!isRideActive) {
+      setNavTarget('self');
+    }
+  }, [isRideActive]);
 
   const { position, heading, error: locError, requestOnce } = useGeolocation({ enabled: true });
 
@@ -227,18 +235,13 @@ export default function RiderDashboard() {
     return () => clearInterval(interval);
   }, [requests[0]?.id, isRideActive]);
 
-  // Poll tracking endpoint every 4s while ride is accepted (stops at arriving)
+  // Poll tracking endpoint continuously while ride is active
   const rideId = ride?.id;
   const rideStatus = ride?.status;
 
   useEffect(() => {
     if (!isRideActive || !rideId) {
       setTracking(null);
-      return undefined;
-    }
-
-    // Customer tracking stops when status is arriving or later
-    if (rideStatus === 'arriving' || rideStatus === 'in_progress') {
       return undefined;
     }
 
@@ -287,14 +290,29 @@ export default function RiderDashboard() {
     }
   }
 
-  // Accept incoming request
+  // Accept incoming request with automatic instant mutual location sharing
   async function handleAccept(reqId: string) {
     setActionLoading(true);
     setErrorToast(null);
     try {
-      const data = await api.acceptRide(reqId);
+      const coords = position
+        ? { lat: position.coords.latitude, lng: position.coords.longitude }
+        : undefined;
+
+      // 1. Instantly share rider's location on acceptance
+      const data = await api.acceptRide(reqId, coords);
       setRide(data.ride);
       setRequests([]);
+
+      // 2. Broadcast live rider coordinates to backend
+      if (coords) {
+        api.postRiderLocation(coords.lat, coords.lng).catch(() => {});
+      }
+
+      // 3. Immediately poll tracking so customer position is populated without delay
+      api.rideTracking(reqId).then((trackData: TrackingData) => {
+        setTracking(trackData);
+      }).catch(() => {});
     } catch (err) {
       setErrorToast((err as Error).message);
     } finally {
@@ -358,12 +376,18 @@ export default function RiderDashboard() {
     }
   }
 
-  // Map center and markers calculation
+  // Map center calculation based on in-app website map navigation target
   const mapCenter: [number, number] = useMemo(() => {
+    if (navTarget === 'passenger' && ride) {
+      return [ride.pickupLatitude, ride.pickupLongitude];
+    }
+    if (navTarget === 'destination' && ride && ride.destinationLatitude != null && ride.destinationLongitude != null) {
+      return [ride.destinationLatitude, ride.destinationLongitude];
+    }
     if (position) return [position.coords.latitude, position.coords.longitude];
     if (ride) return [ride.pickupLatitude, ride.pickupLongitude];
     return [6.5244, 3.3792]; // Lagos central fallback
-  }, [position, ride]);
+  }, [navTarget, position, ride]);
 
   const mapMarkers = useMemo<MapMarker[]>(() => {
     const list: MapMarker[] = [];
@@ -464,13 +488,13 @@ export default function RiderDashboard() {
               alt={user.name || 'Rider'}
               onClick={() => handleTabChange('settings')}
               className="w-8 h-8 rounded-full object-cover border-2 border-slate-200 shadow-2xs cursor-pointer hover:ring-2 hover:ring-brand-500 transition-all"
-              title="Settings & Profile Photo"
+              title="Settings"
             />
           ) : (
             <div
               onClick={() => handleTabChange('settings')}
               className="w-8 h-8 rounded-full bg-slate-900 text-white flex items-center justify-center font-bold text-xs cursor-pointer hover:bg-slate-800 transition-colors"
-              title="Settings & Profile Photo"
+              title="Settings"
             >
               {user?.name ? user.name.slice(0, 2).toUpperCase() : 'RD'}
             </div>
@@ -498,27 +522,80 @@ export default function RiderDashboard() {
               zoom={18}
               markers={mapMarkers}
               route={mapRoute}
-              onLocateMe={requestOnce}
+              onLocateMe={() => {
+                setNavTarget('self');
+                requestOnce();
+              }}
               isReconnecting={isReconnecting}
               heading={heading}
               className="w-full h-full"
             />
 
-            {/* GPS Status Floating Chip at top-right */}
-            <div className="absolute top-4 right-4 z-10 bg-white/95 backdrop-blur-md text-slate-800 text-[11px] font-bold px-3 py-1.5 rounded-full border border-slate-200 shadow-md flex items-center gap-2">
-              <span
-                className={`w-2 h-2 rounded-full ${
-                  sharingLocation && position ? 'bg-brand-500 animate-pulse' : 'bg-slate-400'
-                }`}
-              />
-              <span>
-                {sharingLocation
-                  ? position
-                    ? 'Broadcasting GPS (4s)'
-                    : locError || 'Acquiring GPS…'
-                  : 'Offline (GPS paused)'}
-              </span>
-            </div>
+            {/* In-App Live Navigation Floating Top HUD */}
+            {isRideActive && ride && (
+              <div className="absolute top-4 left-4 right-4 sm:left-auto sm:right-4 sm:max-w-md z-20 bg-slate-900/95 backdrop-blur-md text-white p-3 sm:p-3.5 rounded-2xl shadow-xl border border-slate-700/80 flex items-center justify-between gap-3 animate-in fade-in duration-200">
+                <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
+                  <div className="w-10 h-10 rounded-xl bg-brand-600 flex items-center justify-center text-white shrink-0 font-black shadow-md">
+                    <Icon name="location" size={20} />
+                  </div>
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-1.5">
+                      <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                      <span className="text-[10px] sm:text-[11px] font-black uppercase tracking-wider text-emerald-400">
+                        In-App Website Navigation
+                      </span>
+                    </div>
+                    <p className="text-xs font-bold text-white truncate">
+                      {ride.status === 'in_progress'
+                        ? `To: ${ride.destinationAddress || 'Destination'}`
+                        : ride.status === 'arriving'
+                        ? 'Arrived at pickup point'
+                        : `To: ${ride.pickupAddress || 'Passenger Pickup'}`}
+                    </p>
+                    {tracking?.distanceKm != null && (
+                      <p className="text-[10px] sm:text-[11px] text-slate-300 font-medium truncate">
+                        {tracking.distanceKm} km {tracking.etaMinutes != null ? `· ETA ~${tracking.etaMinutes} min` : ''}
+                      </p>
+                    )}
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (ride.status === 'in_progress') {
+                      setNavTarget((prev) => (prev === 'destination' ? 'self' : 'destination'));
+                    } else {
+                      setNavTarget((prev) => (prev === 'passenger' ? 'self' : 'passenger'));
+                    }
+                  }}
+                  className="px-2.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-white text-[11px] font-bold border border-slate-600 shrink-0 transition-colors cursor-pointer"
+                  title="Toggle map view between your position and target"
+                >
+                  {navTarget === 'self'
+                    ? (ride.status === 'in_progress' ? 'Destination' : 'Passenger')
+                    : 'My Location'}
+                </button>
+              </div>
+            )}
+
+            {/* GPS Status Floating Chip (Only shown when no active ride to keep navigation clear) */}
+            {!isRideActive && (
+              <div className="absolute top-4 right-4 z-10 bg-white/95 backdrop-blur-md text-slate-800 text-[11px] font-bold px-3 py-1.5 rounded-full border border-slate-200 shadow-md flex items-center gap-2">
+                <span
+                  className={`w-2 h-2 rounded-full ${
+                    sharingLocation && position ? 'bg-brand-500 animate-pulse' : 'bg-slate-400'
+                  }`}
+                />
+                <span>
+                  {sharingLocation
+                    ? position
+                      ? 'Broadcasting GPS (4s)'
+                      : locError || 'Acquiring GPS…'
+                    : 'Offline (GPS paused)'}
+                </span>
+              </div>
+            )}
           </div>
 
           {/* Collapsible Drop Up & Down Rider Drawer */}
@@ -763,16 +840,20 @@ export default function RiderDashboard() {
                   )}
                 </div>
 
-                {/* 1-Tap Google Maps Navigation & Action Buttons */}
+                {/* In-App Live Website Navigation to Passenger & Action Buttons */}
                 <div className="space-y-2 pt-1">
-                  <a
-                    href={`https://www.google.com/maps/dir/?api=1&destination=${ride.pickupLatitude},${ride.pickupLongitude}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="w-full py-2.5 px-3 bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 rounded-xl text-xs font-black flex items-center justify-center gap-2 transition-all cursor-pointer shadow-2xs"
+                  <button
+                    type="button"
+                    onClick={() => setNavTarget((prev) => (prev === 'passenger' ? 'self' : 'passenger'))}
+                    className="w-full py-2.5 px-3 bg-brand-50 hover:bg-brand-100 text-brand-700 border border-brand-200 rounded-xl text-xs font-black flex items-center justify-center gap-2 transition-all cursor-pointer shadow-2xs"
                   >
-                    <span>🧭 Open Google Maps Navigation to Passenger</span>
-                  </a>
+                    <Icon name="location" size={15} />
+                    <span>
+                      {navTarget === 'passenger'
+                        ? '📍 Recenter Map on My Motorcycle'
+                        : '🧭 In-App Navigation: View Passenger on Map'}
+                    </span>
+                  </button>
 
                   {ride.status === 'accepted' ? (
                     <Button
@@ -815,14 +896,29 @@ export default function RiderDashboard() {
                   </h4>
                 </div>
 
-                <Button
-                  variant="primary"
-                  className="w-full py-4 text-sm font-black shadow-lg"
-                  onClick={handleCompleteTrip}
-                  disabled={actionLoading}
-                >
-                  {actionLoading ? 'Completing…' : 'Complete Trip'}
-                </Button>
+                <div className="space-y-2 pt-1">
+                  <button
+                    type="button"
+                    onClick={() => setNavTarget((prev) => (prev === 'destination' ? 'self' : 'destination'))}
+                    className="w-full py-2.5 px-3 bg-brand-50 hover:bg-brand-100 text-brand-700 border border-brand-200 rounded-xl text-xs font-black flex items-center justify-center gap-2 transition-all cursor-pointer shadow-2xs"
+                  >
+                    <Icon name="location" size={15} />
+                    <span>
+                      {navTarget === 'destination'
+                        ? '📍 Recenter Map on My Motorcycle'
+                        : '🧭 In-App Navigation: View Destination on Map'}
+                    </span>
+                  </button>
+
+                  <Button
+                    variant="primary"
+                    className="w-full py-4 text-sm font-black shadow-lg"
+                    onClick={handleCompleteTrip}
+                    disabled={actionLoading}
+                  >
+                    {actionLoading ? 'Completing…' : 'Complete Trip'}
+                  </Button>
+                </div>
               </Card>
             )}
 

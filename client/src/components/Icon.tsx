@@ -8,12 +8,14 @@ export type IconName =
   | 'eye'
   | 'history'
   | 'home'
+  | 'info'
   | 'location'
   | 'logout'
   | 'mail'
   | 'menu'
   | 'phone'
   | 'play'
+  | 'plus'
   | 'settings'
   | 'shield'
   | 'star'
@@ -54,6 +56,13 @@ const PATHS: Record<IconName, ReactNode> = {
       <polyline points="9 22 9 12 15 12 15 22" />
     </>
   ),
+  info: (
+    <>
+      <circle cx="12" cy="12" r="10" />
+      <line x1="12" y1="16" x2="12" y2="12" />
+      <line x1="12" y1="8" x2="12.01" y2="8" />
+    </>
+  ),
   location: (
     <>
       <path d="M20 10c0 5-8 12-8 12S4 15 4 10a8 8 0 1 1 16 0Z" />
@@ -81,6 +90,12 @@ const PATHS: Record<IconName, ReactNode> = {
     </>
   ),
   play: <path d="m9 7 8 5-8 5V7Z" />,
+  plus: (
+    <>
+      <line x1="12" y1="5" x2="12" y2="19" />
+      <line x1="5" y1="12" x2="19" y2="12" />
+    </>
+  ),
   settings: (
     <>
       <circle cx="12" cy="12" r="3" />

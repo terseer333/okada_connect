@@ -11,7 +11,7 @@ import { useGeolocation } from '../hooks/useGeolocation';
 import { useAuth } from '../context/AuthContext';
 import { api } from '../services/api';
 
-const LOCATION_POST_MS = 2500;
+const LOCATION_POST_MS = 2000;
 const NEARBY_POLL_MS = 3000;
 const TRACKING_POLL_MS = 2000;
 
@@ -327,9 +327,9 @@ export default function CustomerDashboard() {
     };
   }, []);
 
-  // Post customer location every 4s while ride is pending, accepted, or arriving
+  // Automatically post customer location every 2s while ride is active (pending, accepted, arriving, in_progress)
   useEffect(() => {
-    if (!isRideActive || !ride || ride.status === 'in_progress') return undefined;
+    if (!isRideActive || !ride) return undefined;
     if (!position) return undefined;
 
     let cancelled = false;
@@ -400,6 +400,14 @@ export default function CustomerDashboard() {
           if (cancelled) return;
           setTracking(data);
           setIsReconnecting(false);
+
+          // As soon as ride is accepted, ensure customer's live GPS is pushed to the rider automatically
+          if (data.status === 'accepted' || data.status === 'arriving') {
+            if (position) {
+              api.postCustomerLocation(position.coords.latitude, position.coords.longitude).catch(() => {});
+            }
+          }
+
           if (data.status && data.status !== ride?.status) {
             setRide((prev) => (prev ? { ...prev, status: data.status, rider: (data.rider as any) || prev.rider } : null));
           }
@@ -415,7 +423,7 @@ export default function CustomerDashboard() {
       cancelled = true;
       clearInterval(timer);
     };
-  }, [isRideActive, rideId, rideStatus]);
+  }, [isRideActive, rideId, rideStatus, position?.coords.latitude, position?.coords.longitude]);
 
   // Request Okada ride
   async function handleRequestRide() {
@@ -424,6 +432,9 @@ export default function CustomerDashboard() {
     setErrorToast(null);
 
     try {
+      // Automatically share initial GPS coordinates on request
+      api.postCustomerLocation(effectivePickup[0], effectivePickup[1]).catch(() => {});
+
       const data = await api.createRide({
         latitude: effectivePickup[0],
         longitude: effectivePickup[1],
@@ -649,13 +660,13 @@ export default function CustomerDashboard() {
               alt={user.name || 'User'}
               onClick={() => handleTabChange('settings')}
               className="w-8 h-8 rounded-full object-cover border-2 border-slate-200 shadow-2xs cursor-pointer hover:ring-2 hover:ring-brand-500 transition-all"
-              title="Account Settings & Profile Photo"
+              title="Settings"
             />
           ) : (
             <div
               onClick={() => handleTabChange('settings')}
               className="w-8 h-8 rounded-full bg-slate-900 text-white flex items-center justify-center font-bold text-xs cursor-pointer hover:bg-slate-800 transition-colors"
-              title="Account Settings & Profile Photo"
+              title="Settings"
             >
               {user?.name ? user.name.slice(0, 2).toUpperCase() : 'CU'}
             </div>
@@ -691,7 +702,7 @@ export default function CustomerDashboard() {
               <span className="text-sm">🛵</span>
               <span className="text-xs font-extrabold text-slate-800">
                 {isRideActive
-                  ? (ride.status === 'in_progress' ? 'Trip in Progress' : 'Active Ride Details')
+                  ? (ride?.status === 'in_progress' ? 'Trip in Progress' : 'Active Ride Details')
                   : 'Book Ride (Drop-down Mode)'}
               </span>
               {!isRideActive && nearbyRiders.length > 0 && (
@@ -852,6 +863,15 @@ export default function CustomerDashboard() {
                         )}
                       </div>
 
+                      {/* Automatic Mutual Live Tracking Badge */}
+                      <div className="flex items-center justify-between p-2.5 bg-emerald-50 text-emerald-800 rounded-xl border border-emerald-200 text-xs">
+                        <div className="flex items-center gap-2">
+                          <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
+                          <span className="font-extrabold">Automatic Mutual Tracking</span>
+                        </div>
+                        <span className="text-[11px] font-semibold text-emerald-700">Live GPS Connected</span>
+                      </div>
+
                       {/* Quick Communication & Live Spot Sharing */}
                       <div className="flex flex-wrap items-center gap-2 pt-1">
                         {riderDetails?.phone && (
@@ -881,14 +901,15 @@ export default function CustomerDashboard() {
                             requestOnce();
                             if (position) {
                               api.postCustomerLocation(position.coords.latitude, position.coords.longitude).then(() => {
-                                setErrorToast('📍 Shared your exact live GPS spot with your rider!');
+                                setErrorToast('📍 Live GPS position refreshed with your rider!');
                               });
                             }
                           }}
                           className="py-2 px-3 rounded-xl bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 text-xs font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer"
-                          title="Broadcast high-accuracy GPS coordinates directly to your rider"
+                          title="Refresh your live GPS coordinates with your rider"
                         >
-                          <span>📍 Share Spot</span>
+                          <Icon name="location" size={14} />
+                          <span>Sync GPS</span>
                         </button>
                       </div>
 

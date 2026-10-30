@@ -259,7 +259,7 @@ def update_customer_location_for_active_ride(conn, customer_id: str, latitude: f
                customer_longitude = %(lon)s,
                updated_at = now()
            WHERE customer_id = %(customer_id)s
-             AND status IN ('pending', 'accepted', 'arriving')
+             AND status IN ('pending', 'accepted', 'arriving', 'in_progress')
            RETURNING id""",
         {"customer_id": customer_id, "lat": latitude, "lon": longitude},
     ).fetchone()
