@@ -423,7 +423,7 @@ export function FeatureRiderArtwork({ kind }: FeatureRiderArtworkProps) {
           {/* Live GPS Coordinates Pill (top left) */}
           <g transform="translate(20, 20)">
             <rect width="138" height="26" rx="13" fill="rgba(255, 255, 255, 0.92)" stroke="#e0f2fe" strokeWidth="1" />
-            <circle cx="12" cy="13" r="3.5" fill="#10b981" />
+            <circle cx="12" cy="13" r="3.5" fill="#0284c7" />
             <text x="22" y="17" fill="#334155" fontSize="9.5" fontWeight="700">
               Turn-by-turn GPS
             </text>

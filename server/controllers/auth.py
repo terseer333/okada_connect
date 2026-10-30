@@ -45,6 +45,13 @@ def login(body: LoginRequest, conn: Connection = Depends(get_conn)):
     if user is None or not verify_password(body.password, user.password_hash):
         raise HTTPException(status_code=401, detail="Invalid email or password")
 
+    # Accounts and dashboards are strictly independent: a passenger cannot switch to a rider
+    if body.role and user.role != body.role:
+        raise HTTPException(
+            status_code=403,
+            detail=f"This account is registered as a {user.role}. Every dashboard is independent. Please select '{user.role.capitalize()}' to sign in.",
+        )
+
     return {"token": sign_token(user.id, user.role), "user": users.user_public(user)}
 
 

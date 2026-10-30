@@ -6,7 +6,12 @@ import { PersistentBackgroundVideo } from "./components/PersistentBackgroundVide
 import { AnimatedCounter } from "./components/AnimatedCounter"
 import { Icon, type IconName } from "./components/Icon"
 import { Logo, Eyebrow, RiderIllustration } from "./components/Brand"
-import { FeatureRiderArtwork, type FeatureGoalKind } from "./components/FeatureRiderArtwork"
+import {
+  FeatureCardArtwork,
+  FeatureBadgeIcon,
+  type FeatureCardKind,
+  type FeatureIconName,
+} from "./components/FeatureCardArtwork"
 import Login from "./pages/Login"
 import Register from "./pages/Register"
 import CustomerDashboard from "./pages/CustomerDashboard"
@@ -32,46 +37,34 @@ function Button({
 }
 
 interface Feature {
-  icon: IconName
+  kind: FeatureCardKind
+  icon: FeatureIconName
   title: string
   text: string
-  accent: "blue" | "red" | "yellow"
-  goalKind: FeatureGoalKind
-  badge: string
-  goalTitle: string
-  goalDescription: string
+  accent: "blue" | "red" | "orange"
 }
 
 const features: Feature[] = [
   {
+    kind: "tracking",
     icon: "location",
-    title: "Live tracking",
-    text: "Follow every turn in real time and share your trip with people you trust.",
+    title: "Live Tracking",
+    text: "See your rider's location in real time and know exactly when they'll arrive.",
     accent: "blue",
-    goalKind: "tracking",
-    badge: "Live GPS Active",
-    goalTitle: "100% Real-Time Visibility",
-    goalDescription: "Follow exact route milestones with real-time GPS tracking and live journey sharing with trusted contacts.",
   },
   {
+    kind: "safety",
     icon: "shield",
-    title: "Safety first",
-    text: "Every rider is verified, every trip is monitored, and support is always close.",
+    title: "Safety First",
+    text: "Verified riders, real-time monitoring and your safety is our priority.",
     accent: "red",
-    goalKind: "safety",
-    badge: "100% Verified",
-    goalTitle: "Zero-Compromise Protection",
-    goalDescription: "Vetted riders, mandatory helmet compliance, and 24/7 security monitoring protect every single kilometer.",
   },
   {
+    kind: "pickup",
     icon: "bolt",
-    title: "Fast pickup",
-    text: "Smart matching finds the closest available rider so you spend less time waiting.",
-    accent: "yellow",
-    goalKind: "pickup",
-    badge: "Under 3-Min Arrival",
-    goalTitle: "Lightning-Fast Dispatch",
-    goalDescription: "Smart proximity matching connects you to the nearest active rider to get you moving in under 3 minutes.",
+    title: "Fast Pickup",
+    text: "Get to your destination faster, no long wait.",
+    accent: "orange",
   },
 ]
 
@@ -221,39 +214,23 @@ function LandingPage() {
           </p>
         </div>
         <div className="feature-grid">
-          {features.map((feature, index) => (
-            <article className="feature-card" key={feature.title}>
-              <div className="feature-card-header">
-                <div className={`feature-icon ${feature.accent}`}>
-                  <Icon name={feature.icon} size={26} />
+          {features.map((feature) => (
+            <article
+              className={`feature-pill-card card-${feature.accent}`}
+              key={feature.title}
+            >
+              <div className="feature-pill-left">
+                <div className={`feature-pill-badge badge-${feature.accent}`}>
+                  <FeatureBadgeIcon name={feature.icon} />
                 </div>
-                <span className="feature-number">0{index + 1}</span>
-              </div>
-
-              <div className="feature-media">
-                <div className="feature-image-wrapper">
-                  <FeatureRiderArtwork kind={feature.goalKind} />
-                  <span className={`feature-media-badge ${feature.accent}`}>
-                    {feature.badge}
-                  </span>
+                <div className="feature-pill-text">
+                  <h4>{feature.title}</h4>
+                  <p>{feature.text}</p>
                 </div>
-                <figure className="feature-image-caption">
-                  <div className="caption-tag-row">
-                    <span className="caption-tag">Goal Achieved</span>
-                    <strong className="goal-title">{feature.goalTitle}</strong>
-                  </div>
-                  <p>{feature.goalDescription}</p>
-                </figure>
               </div>
-
-              <div className="feature-content">
-                <h3>{feature.title}</h3>
-                <p>{feature.text}</p>
+              <div className="feature-pill-artwork">
+                <FeatureCardArtwork kind={feature.kind} />
               </div>
-
-              <button className="learn-button">
-                Learn more <Icon name="arrow" size={16} />
-              </button>
             </article>
           ))}
         </div>

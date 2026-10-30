@@ -21,9 +21,12 @@ CREATE TABLE IF NOT EXISTS users (
   email         TEXT NOT NULL UNIQUE,
   password_hash TEXT NOT NULL,
   role          TEXT NOT NULL CHECK (role IN ('customer', 'rider')),
+  photo_url     TEXT,
   created_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
   updated_at    TIMESTAMPTZ NOT NULL DEFAULT now()
 );
+
+ALTER TABLE users ADD COLUMN IF NOT EXISTS photo_url TEXT;
 
 CREATE TABLE IF NOT EXISTS riders (
   user_id              UUID PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
@@ -63,8 +66,21 @@ CREATE TABLE IF NOT EXISTS ride_requests (
   started_at       TIMESTAMPTZ,
   completed_at     TIMESTAMPTZ,
   cancelled_at     TIMESTAMPTZ,
-  updated_at       TIMESTAMPTZ NOT NULL DEFAULT now()
+  updated_at       TIMESTAMPTZ NOT NULL DEFAULT now(),
+  fare             DOUBLE PRECISION DEFAULT 800.0,
+  destination_latitude DOUBLE PRECISION,
+  destination_longitude DOUBLE PRECISION,
+  pickup_address   TEXT,
+  destination_address TEXT
 );
+
+ALTER TABLE ride_requests ADD COLUMN IF NOT EXISTS fare DOUBLE PRECISION DEFAULT 800.0;
+ALTER TABLE ride_requests ADD COLUMN IF NOT EXISTS destination_latitude DOUBLE PRECISION;
+ALTER TABLE ride_requests ADD COLUMN IF NOT EXISTS destination_longitude DOUBLE PRECISION;
+ALTER TABLE ride_requests ADD COLUMN IF NOT EXISTS pickup_address TEXT;
+ALTER TABLE ride_requests ADD COLUMN IF NOT EXISTS destination_address TEXT;
+ALTER TABLE ride_requests ADD COLUMN IF NOT EXISTS customer_latitude DOUBLE PRECISION;
+ALTER TABLE ride_requests ADD COLUMN IF NOT EXISTS customer_longitude DOUBLE PRECISION;
 
 CREATE INDEX IF NOT EXISTS idx_ride_requests_status ON ride_requests(status);
 CREATE INDEX IF NOT EXISTS idx_ride_requests_customer ON ride_requests(customer_id);

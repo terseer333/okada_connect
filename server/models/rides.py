@@ -15,8 +15,8 @@ REQUEST_TTL = "3 minutes"
 # One query returns a ride with everything both sides need to know.
 _DETAIL_COLUMNS = """
 SELECT rr.*,
-       cu.name AS customer_name, cu.phone AS customer_phone,
-       ru.name AS rider_name,      ru.phone AS rider_phone,
+       cu.name AS customer_name, cu.phone AS customer_phone, cu.photo_url AS customer_photo_url,
+       ru.name AS rider_name,      ru.phone AS rider_phone, ru.photo_url AS rider_photo_url,
        rp.motorcycle_number AS rider_motorcycle_number,
        rp.motorcycle_model  AS rider_motorcycle_model,
        rp.rating AS rider_rating, rp.rating_count AS rider_rating_count,
@@ -51,7 +51,14 @@ def serialize_ride(row) -> dict:
         "riderId": str(r["rider_id"]) if r["rider_id"] else None,
         "pickupLatitude": r["pickup_latitude"],
         "pickupLongitude": r["pickup_longitude"],
+        "destinationLatitude": r.get("destination_latitude"),
+        "destinationLongitude": r.get("destination_longitude"),
+        "pickupAddress": r.get("pickup_address") or "Pickup Point",
+        "destinationAddress": r.get("destination_address") or "City Centre",
+        "fare": float(r.get("fare") or 800.0),
         "status": r["status"],
+        "customerLatitude": r.get("customer_latitude"),
+        "customerLongitude": r.get("customer_longitude"),
         "requestedAt": r["requested_at"],
         "acceptedAt": r["accepted_at"],
         "startedAt": r["started_at"],
@@ -61,6 +68,7 @@ def serialize_ride(row) -> dict:
             "id": str(r["customer_id"]),
             "name": r["customer_name"],
             "phone": r["customer_phone"],
+            "photoUrl": r.get("customer_photo_url"),
         },
         "rider": None,
     }
@@ -69,6 +77,7 @@ def serialize_ride(row) -> dict:
             "id": str(r["rider_id"]),
             "name": r["rider_name"],
             "phone": r["rider_phone"],
+            "photoUrl": r.get("rider_photo_url"),
             "motorcycleNumber": r["rider_motorcycle_number"],
             "motorcycleModel": r["rider_motorcycle_model"],
             "rating": r["rider_rating"],
@@ -112,12 +121,35 @@ def find_active_ride_for_rider(conn, rider_id: str):
     ).fetchone()
 
 
-def insert_ride_request(conn, customer_id: str, latitude: float, longitude: float):
+def insert_ride_request(
+    conn,
+    customer_id: str,
+    latitude: float,
+    longitude: float,
+    pickup_address: str | None = None,
+    destination_latitude: float | None = None,
+    destination_longitude: float | None = None,
+    destination_address: str | None = None,
+    fare: float | None = None,
+):
     return conn.execute(
-        """INSERT INTO ride_requests (customer_id, pickup_latitude, pickup_longitude)
-           VALUES (%s, %s, %s)
+        """INSERT INTO ride_requests (
+               customer_id, pickup_latitude, pickup_longitude,
+               pickup_address, destination_latitude, destination_longitude,
+               destination_address, fare
+           )
+           VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
            RETURNING *""",
-        (customer_id, latitude, longitude),
+        (
+            customer_id,
+            latitude,
+            longitude,
+            pickup_address or "Pickup Point",
+            destination_latitude,
+            destination_longitude,
+            destination_address or "Destination",
+            fare if fare is not None else 800.0,
+        ),
     ).fetchone()
 
 
@@ -199,3 +231,36 @@ def cancel_ride(conn, ride_id: str, customer_id: str):
            RETURNING *""",
         (ride_id, customer_id),
     ).fetchone()
+
+
+def list_user_ride_history(conn, user_id: str, role: str, page: int = 1, limit: int = 10):
+    offset = max(0, (page - 1) * limit)
+    filter_col = "rr.customer_id" if role == "customer" else "rr.rider_id"
+    count_row = conn.execute(
+        f"SELECT count(*) as total FROM ride_requests rr WHERE {filter_col} = %s",
+        (user_id,),
+    ).fetchone()
+    total = count_row[0] if count_row else 0
+
+    rows = conn.execute(
+        _DETAIL_SELECT
+        + f" WHERE {filter_col} = %s ORDER BY rr.requested_at DESC LIMIT %s OFFSET %s",
+        (user_id, limit, offset),
+    ).fetchall()
+
+    return [serialize_ride(r) for r in rows], total
+
+
+def update_customer_location_for_active_ride(conn, customer_id: str, latitude: float, longitude: float):
+    """Updates the customer's live position on their active ride."""
+    return conn.execute(
+        """UPDATE ride_requests
+           SET customer_latitude = %(lat)s,
+               customer_longitude = %(lon)s,
+               updated_at = now()
+           WHERE customer_id = %(customer_id)s
+             AND status IN ('pending', 'accepted', 'arriving')
+           RETURNING id""",
+        {"customer_id": customer_id, "lat": latitude, "lon": longitude},
+    ).fetchone()
+

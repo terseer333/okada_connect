@@ -16,6 +16,12 @@ from controllers.auth import router as auth_router  # noqa: E402
 from controllers.customers import router as customer_router  # noqa: E402
 from controllers.riders import router as rider_router  # noqa: E402
 from controllers.rides import router as rides_router  # noqa: E402
+from controllers.users import router as users_router  # noqa: E402
+from controllers.wallet import router as wallet_router  # noqa: E402
+from fastapi.staticfiles import StaticFiles  # noqa: E402
+
+UPLOAD_DIR = Path(__file__).resolve().parent.parent / "uploads"
+UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
 
 
 @asynccontextmanager
@@ -33,6 +39,8 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+app.mount("/uploads", StaticFiles(directory=UPLOAD_DIR), name="uploads")
+
 
 @app.get("/api/health")
 def health():
@@ -43,6 +51,8 @@ app.include_router(auth_router)
 app.include_router(customer_router)
 app.include_router(rider_router)
 app.include_router(rides_router)
+app.include_router(users_router)
+app.include_router(wallet_router)
 
 
 if __name__ == "__main__":

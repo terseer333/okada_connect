@@ -18,6 +18,7 @@ class RegisterRequest(BaseModel):
 class LoginRequest(BaseModel):
     email: EmailStr
     password: str
+    role: Literal["customer", "rider"] | None = None
 
 
 class StatusUpdateRequest(BaseModel):
@@ -29,12 +30,47 @@ class LocationUpdateRequest(BaseModel):
     longitude: float = Field(ge=-180, le=180)
 
 
+class CreateRideRequest(BaseModel):
+    latitude: float = Field(ge=-90, le=90)
+    longitude: float = Field(ge=-180, le=180)
+    pickupAddress: str | None = None
+    destinationLatitude: float | None = None
+    destinationLongitude: float | None = None
+    destinationAddress: str | None = None
+    fare: float | None = None
+
+
+class RiderLocationPostRequest(BaseModel):
+    lat: float | None = Field(default=None, ge=-90, le=90)
+    lng: float | None = Field(default=None, ge=-180, le=180)
+    latitude: float | None = Field(default=None, ge=-90, le=90)
+    longitude: float | None = Field(default=None, ge=-180, le=180)
+
+    def get_lat(self) -> float:
+        val = self.lat if self.lat is not None else self.latitude
+        if val is None:
+            raise ValueError("lat or latitude is required")
+        return val
+
+    def get_lng(self) -> float:
+        val = self.lng if self.lng is not None else self.longitude
+        if val is None:
+            raise ValueError("lng or longitude is required")
+        return val
+
+
+class ProfileUpdateRequest(BaseModel):
+    name: str | None = Field(default=None, min_length=1, max_length=200)
+    phone: str | None = Field(default=None, min_length=1, max_length=30)
+
+
 class UserPublic(BaseModel):
     id: str
     name: str
     phone: str
     email: str
     role: str
+    photoUrl: str | None = None
     createdAt: datetime
 
 

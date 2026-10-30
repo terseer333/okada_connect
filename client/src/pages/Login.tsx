@@ -63,7 +63,7 @@ export default function Login() {
     setError(null)
     setSubmitting(true)
     try {
-      const user = await login({ email, password })
+      const user = await login({ email, password, role })
       navigate(user.role === 'rider' ? '/rider' : '/customer')
     } catch (err) {
       setError((err as Error).message)
@@ -125,6 +125,7 @@ export default function Login() {
         <div className="secure-note">
           <span /> FAST · SAFE · RELIABLE <span />
         </div>
+
         <p className="signup-line">
           New to Okada Connect?{' '}
           <Link to={`/register?role=${role}`}>Create your account</Link>

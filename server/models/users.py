@@ -19,8 +19,33 @@ def user_public(row) -> dict:
         "phone": u["phone"],
         "email": u["email"],
         "role": u["role"],
+        "photoUrl": u.get("photo_url"),
         "createdAt": u["created_at"],
     }
+
+
+def update_user_profile(conn, user_id: str, *, name: str | None = None, phone: str | None = None):
+    fields = []
+    params = []
+    if name is not None:
+        fields.append("name = %s")
+        params.append(name)
+    if phone is not None:
+        fields.append("phone = %s")
+        params.append(phone)
+    if not fields:
+        return find_user_by_id(conn, user_id)
+    fields.append("updated_at = now()")
+    params.append(user_id)
+    query = f"UPDATE users SET {', '.join(fields)} WHERE id = %s RETURNING *"
+    return conn.execute(query, tuple(params)).fetchone()
+
+
+def update_user_photo(conn, user_id: str, photo_url: str):
+    return conn.execute(
+        "UPDATE users SET photo_url = %s, updated_at = now() WHERE id = %s RETURNING *",
+        (photo_url, user_id),
+    ).fetchone()
 
 
 def find_user_by_email(conn, email: str):
@@ -130,11 +155,11 @@ def find_nearby_riders(conn, latitude: float, longitude: float, radius_km: float
              WHERE r.availability_status = 'online'
                AND r.current_latitude IS NOT NULL
                AND r.current_longitude IS NOT NULL
-               AND r.location_updated_at > now() - interval '15 minutes'
+               AND (r.location_updated_at IS NULL OR r.location_updated_at > now() - interval '60 minutes')
            )
            SELECT * FROM candidates
            WHERE distance_km <= %(radius_km)s
            ORDER BY distance_km ASC
-           LIMIT 20""",
+           LIMIT 25""",
         {"lat": latitude, "lon": longitude, "radius_km": radius_km},
     ).fetchall()

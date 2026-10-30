@@ -12,10 +12,16 @@ export default defineConfig({
     },
   },
   server: {
+    host: '0.0.0.0',
     port: 5173,
     proxy: {
       // Forward API calls to the FastAPI server (server/main.py).
       '/api': {
+        target: 'http://localhost:4000',
+        changeOrigin: true,
+      },
+      // Forward uploaded photos to the FastAPI server.
+      '/uploads': {
         target: 'http://localhost:4000',
         changeOrigin: true,
       },

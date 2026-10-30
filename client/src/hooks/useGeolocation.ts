@@ -2,35 +2,70 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 
 type GeolocationOptions = {
   enabled?: boolean;
-  maxAgeMs?: number;
 };
 
+const LAST_LAT_KEY = 'okada_last_gps_lat';
+const LAST_LNG_KEY = 'okada_last_gps_lng';
+
+function getCachedPosition(): GeolocationPosition | null {
+  try {
+    const latStr = localStorage.getItem(LAST_LAT_KEY);
+    const lngStr = localStorage.getItem(LAST_LNG_KEY);
+    if (latStr && lngStr) {
+      const latitude = parseFloat(latStr);
+      const longitude = parseFloat(lngStr);
+      if (!isNaN(latitude) && !isNaN(longitude)) {
+        return {
+          coords: {
+            latitude,
+            longitude,
+            accuracy: 25,
+            altitude: null,
+            altitudeAccuracy: null,
+            heading: null,
+            speed: null,
+          },
+          timestamp: Date.now(),
+        } as GeolocationPosition;
+      }
+    }
+  } catch {
+    // Ignore storage errors
+  }
+  return null;
+}
+
 /**
- * Track the browser's GPS position.
+ * Real-time GPS movement tracker with live watchPosition,
+ * compass heading orientation, and instant local cache restoration.
  */
-export function useGeolocation({ enabled = true, maxAgeMs = 60_000 }: GeolocationOptions = {}) {
-  const [position, setPosition] = useState<GeolocationPosition | null>(null);
+export function useGeolocation({ enabled = true }: GeolocationOptions = {}) {
+  const [position, setPosition] = useState<GeolocationPosition | null>(() => getCachedPosition());
+  const [heading, setHeading] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
   const watchIdRef = useRef<number | null>(null);
-  const lastFixRef = useRef(0);
+  const hasHardwareFixRef = useRef<boolean>(false);
 
-  const handlePosition = useCallback(
-    (pos: GeolocationPosition) => {
-      if (pos.timestamp < lastFixRef.current && Date.now() - pos.timestamp > maxAgeMs) {
-        return; // stale cached fix
-      }
-      lastFixRef.current = pos.timestamp;
-      setPosition(pos);
-      setError(null);
-    },
-    [maxAgeMs],
-  );
+  const handlePosition = useCallback((pos: GeolocationPosition) => {
+    hasHardwareFixRef.current = true;
+    setPosition(pos);
+    setError(null);
+    try {
+      localStorage.setItem(LAST_LAT_KEY, pos.coords.latitude.toString());
+      localStorage.setItem(LAST_LNG_KEY, pos.coords.longitude.toString());
+    } catch {
+      // Ignore storage errors
+    }
+    if (pos.coords.heading !== null && !isNaN(pos.coords.heading)) {
+      setHeading(Math.round(pos.coords.heading));
+    }
+  }, []);
 
   const handleError = useCallback((err: GeolocationPositionError) => {
     const messages: Record<number, string> = {
-      1: 'Location permission denied. Enable it in your browser settings to use Okada Connect.',
-      2: 'Location unavailable. Try moving outdoors near a window.',
-      3: 'Location request timed out. Try again.',
+      1: 'Location permission denied. Enable location in browser settings to track live okada rides.',
+      2: 'Searching for GPS fix…',
+      3: 'GPS request timed out. Retrying GPS search…',
     };
     setError(messages[err.code] || 'Could not get your location.');
   }, []);
@@ -42,9 +77,41 @@ export function useGeolocation({ enabled = true, maxAgeMs = 60_000 }: Geolocatio
     }
     navigator.geolocation.getCurrentPosition(handlePosition, handleError, {
       enableHighAccuracy: true,
+      maximumAge: 0,
       timeout: 10_000,
     });
   }, [handlePosition, handleError]);
+
+  // Compass Heading & Device Orientation Listener
+  useEffect(() => {
+    if (typeof window === 'undefined') return undefined;
+
+    const handleOrientation = (e: DeviceOrientationEvent) => {
+      // iOS webkitCompassHeading or Android alpha (360 - alpha)
+      const anyEvent = e as unknown as { webkitCompassHeading?: number };
+      let h: number | null = null;
+
+      if (typeof anyEvent.webkitCompassHeading === 'number') {
+        h = anyEvent.webkitCompassHeading;
+      } else if (typeof e.alpha === 'number' && e.absolute) {
+        h = (360 - e.alpha) % 360;
+      } else if (typeof e.alpha === 'number') {
+        h = (360 - e.alpha) % 360;
+      }
+
+      if (h !== null && !isNaN(h)) {
+        setHeading(Math.round(h));
+      }
+    };
+
+    window.addEventListener('deviceorientationabsolute', handleOrientation as EventListener, true);
+    window.addEventListener('deviceorientation', handleOrientation as EventListener, true);
+
+    return () => {
+      window.removeEventListener('deviceorientationabsolute', handleOrientation as EventListener, true);
+      window.removeEventListener('deviceorientation', handleOrientation as EventListener, true);
+    };
+  }, []);
 
   useEffect(() => {
     if (!enabled) return undefined;
@@ -54,18 +121,23 @@ export function useGeolocation({ enabled = true, maxAgeMs = 60_000 }: Geolocatio
       return undefined;
     }
 
-    requestOnce(); // get a first fix quickly (may be cached/low accuracy)
+    // Immediately trigger high-accuracy GPS fix
+    requestOnce();
+
+    // Stream live GPS coordinates continuously as user moves
     watchIdRef.current = navigator.geolocation.watchPosition(handlePosition, handleError, {
       enableHighAccuracy: true,
-      maximumAge: 15_000,
-      timeout: 20_000,
+      maximumAge: 2000,
+      timeout: 12_000,
     });
 
     return () => {
-      if (watchIdRef.current !== null) navigator.geolocation.clearWatch(watchIdRef.current);
+      if (watchIdRef.current !== null) {
+        navigator.geolocation.clearWatch(watchIdRef.current);
+      }
       watchIdRef.current = null;
     };
   }, [enabled, handlePosition, handleError, requestOnce]);
 
-  return { position, error, requestOnce };
+  return { position, heading, error, requestOnce };
 }
